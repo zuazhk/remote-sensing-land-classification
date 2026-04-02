@@ -14,10 +14,10 @@ import io
 import json
 from typing import List, Optional
 
-from backend.shared import classifiers, validate_model_key
-from backend.config import ALLOWED_MIME_TYPES, MAX_FILE_SIZE, ALLOWED_EXTENSIONS
-from backend.cache import cached_prediction, prediction_cache
-from backend.cache_integration import create_image_signature
+from ..shared import classifiers, validate_model_key
+from ..config import ALLOWED_MIME_TYPES, MAX_FILE_SIZE, ALLOWED_EXTENSIONS
+from ..cache import cached_prediction, prediction_cache
+from ..cache_integration import create_image_signature
 
 router = APIRouter()
 
@@ -43,6 +43,7 @@ class BatchPredictResponse(BaseModel):
     results: List[BatchResult]
     total: int
     successful: int
+    failed: int
 
 
 # 缓存辅助函数
@@ -175,6 +176,7 @@ async def batch_predict(
     classifier = classifiers[model]
     batch_results = []
     successful = 0
+    failed = 0
 
     # 处理每个文件
     for file in files:
@@ -204,6 +206,7 @@ async def batch_predict(
                     result={"error": str(e), "success": False},
                 )
             )
+            failed += 1
 
     # 根据请求格式返回结果
     if export_format == "csv":
@@ -234,5 +237,9 @@ async def batch_predict(
     else:
         # 默认返回JSON
         return BatchPredictResponse(
-            model=model, results=batch_results, total=len(files), successful=successful
+            model=model,
+            results=batch_results,
+            total=len(files),
+            successful=successful,
+            failed=failed,
         )

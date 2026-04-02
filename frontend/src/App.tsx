@@ -7,6 +7,7 @@ import Predict from "./pages/Predict";
 import Compare from "./pages/Compare";
 import Visualization from "./pages/Visualization";
 import { Button } from "./components/ui/Button";
+import { API_ENDPOINTS } from "./config/api";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -46,7 +47,7 @@ const App: React.FC = () => {
                 </div>
                 <div className="flex items-center space-x-4">
                   <a
-                    href="http://127.0.0.1:8001/docs"
+                    href={API_ENDPOINTS.docs}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-sm text-gray-600 hover:text-gray-900"
@@ -114,7 +115,7 @@ const App: React.FC = () => {
                   <ul className="text-gray-400 space-y-2">
                     <li>
                       <a
-                        href="http://127.0.0.1:8001/docs"
+                        href={API_ENDPOINTS.docs}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="hover:text-white"
@@ -124,7 +125,7 @@ const App: React.FC = () => {
                     </li>
                     <li>
                       <a
-                        href="http://127.0.0.1:8001/redoc"
+                        href={API_ENDPOINTS.redoc}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="hover:text-white"

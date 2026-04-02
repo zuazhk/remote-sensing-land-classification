@@ -11,7 +11,7 @@ import pytest
 
 def test_settings_loading():
     """测试设置模块正确加载"""
-    from backend.settings import settings
+    from ..settings import settings
 
     # 检查基本设置
     assert hasattr(settings, "api_host")
@@ -44,11 +44,11 @@ def test_settings_environment_override():
 
         # 重新导入设置以获取新值
         import importlib
-        import backend.settings
+        from .. import settings as backend_settings
 
-        importlib.reload(backend.settings)
+        importlib.reload(backend_settings)
 
-        settings = backend.settings.settings
+        settings = backend_settings.settings
 
         # 检查环境变量被正确使用
         assert settings.api_port == 9999
@@ -62,14 +62,14 @@ def test_settings_environment_override():
 
         # 重新加载原始设置
         import importlib
-        import backend.settings
+        from .. import settings as backend_settings
 
-        importlib.reload(backend.settings)
+        importlib.reload(backend_settings)
 
 
 def test_config_compatibility():
     """测试config.py的向后兼容性"""
-    from backend.config import API_HOST, API_PORT, ALLOWED_ORIGINS, MODELS_DIR, DATA_DIR
+    from ..config import API_HOST, API_PORT, ALLOWED_ORIGINS, MODELS_DIR, DATA_DIR
 
     # 检查导出的值存在
     assert API_HOST is not None
@@ -86,7 +86,7 @@ def test_config_compatibility():
     assert isinstance(DATA_DIR, Path)
 
     # 检查config使用settings的值
-    from backend.settings import settings
+    from ..settings import settings
 
     assert API_HOST == settings.api_host
     assert API_PORT == settings.api_port
@@ -107,11 +107,11 @@ def test_cors_origins_parsing():
 
         # 重新导入设置
         import importlib
-        import backend.settings
+        from .. import settings as backend_settings
 
-        importlib.reload(backend.settings)
+        importlib.reload(backend_settings)
 
-        settings = backend.settings.settings
+        settings = backend_settings.settings
 
         assert settings.cors_origins == ["http://test1.com", "http://test2.com"]
 
@@ -123,6 +123,6 @@ def test_cors_origins_parsing():
             os.environ.pop("CORS_ORIGINS", None)
 
         import importlib
-        import backend.settings
+        from .. import settings as backend_settings
 
-        importlib.reload(backend.settings)
+        importlib.reload(backend_settings)

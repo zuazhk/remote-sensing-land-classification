@@ -1,25 +1,21 @@
 """
 FastAPI 主入口 - 现代前后端分离版本
 纯API服务，移除模板渲染，支持CORS
+
+启动方式（在 backend/ 目录下执行）：
+  uv run uvicorn backend.main:app --host 0.0.0.0 --port 8001
 """
 
-import sys
 import logging
 import time
 from contextlib import asynccontextmanager
-from pathlib import Path
-
-# 确保backend包在Python路径中
-backend_dir = Path(__file__).parent
-if str(backend_dir) not in sys.path:
-    sys.path.insert(0, str(backend_dir))
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 
-# 导入配置 - 使用绝对导入
-from backend.config import API_HOST, API_PORT, ALLOWED_ORIGINS
+# 使用相对导入
+from .config import API_HOST, API_PORT, ALLOWED_ORIGINS
 
 # 设置日志
 logging.basicConfig(
@@ -40,7 +36,7 @@ async def lifespan(app: FastAPI):
     global classifiers
     try:
         # 动态导入，避免启动失败
-        from backend.shared import classifiers as loaded_classifiers
+        from .shared import classifiers as loaded_classifiers
 
         classifiers = loaded_classifiers
         logger.info(f"成功加载 {len(classifiers)} 个模型")
@@ -103,7 +99,7 @@ app.add_middleware(RequestLoggingMiddleware)
 
 # 导入路由
 # 注意：由于循环导入问题，我们在lifespan之后导入
-from backend.routes import health, models, predict, evaluation, visualization, train
+from .routes import health, models, predict, evaluation, visualization, train
 
 # 注册路由
 app.include_router(health.router, prefix="/api/v1", tags=["系统状态"])
@@ -139,16 +135,4 @@ async def general_exception_handler(request, exc):
     return JSONResponse(
         status_code=500,
         content={"detail": "服务器内部错误"},
-    )
-
-
-if __name__ == "__main__":
-    import uvicorn
-
-    uvicorn.run(
-        "main:app",
-        host=API_HOST,
-        port=API_PORT,
-        reload=True,
-        log_level="info",
     )

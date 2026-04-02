@@ -11,9 +11,9 @@ from typing import Dict, Any, Optional
 from fastapi import APIRouter, HTTPException
 
 # 导入共享配置和模型
-from backend.shared import EuroSAT_CLASSES, classifiers, validate_model_key
-from backend.routes import schemas
-from backend.lib.config import (
+from ..shared import EuroSAT_CLASSES, classifiers, validate_model_key
+from . import schemas
+from ..lib.config import (
     NEW_MODELS_DIR,
     NEW_TRAINING_HISTORY_DIR,
     ORIGINAL_MODELS_DIR,

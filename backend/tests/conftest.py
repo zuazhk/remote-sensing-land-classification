@@ -1,21 +1,18 @@
 """
 pytest配置和fixtures
+
+运行测试（在 backend/ 目录下执行）：
+  uv run pytest
 """
 
 import asyncio
-import sys
-from pathlib import Path
 from typing import AsyncGenerator, Generator
 
 import pytest
 import pytest_asyncio
 from fastapi.testclient import TestClient
 
-# 添加项目根目录到Python路径
-project_root = Path(__file__).parent.parent
-sys.path.insert(0, str(project_root))
-
-from backend.main import app
+from ..main import app
 
 
 @pytest.fixture(scope="session")

@@ -1,21 +1,29 @@
 #!/bin/bash
+# 遥感图像分类系统 - 后端启动脚本
+# 使用 uv run 管理虚拟环境和依赖
 
-# 启动遥感图像分类API后端服务
+set -e
 
-cd "$(dirname "$0")/../backend"
+SCRIPT_DIR="$(dirname "$0")"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+BACKEND_DIR="$PROJECT_ROOT/backend"
 
-# 检查虚拟环境
-if [ ! -d ".venv" ]; then
-    echo "创建Python虚拟环境..."
-    uv venv .venv
+# 检查 uv 是否安装
+if ! command -v uv &> /dev/null; then
+    echo "错误: 未找到 uv，请先安装: https://docs.astral.sh/uv/getting-started/installation/"
+    exit 1
 fi
 
-# 激活虚拟环境并安装依赖
-source .venv/bin/activate
-pip install -e . > /dev/null 2>&1
+# 自动同步依赖（uv sync 会自动创建 .venv 并安装依赖）
+echo "同步依赖..."
+uv sync --project "$BACKEND_DIR" --dev
 
-# 启动FastAPI服务
-echo "启动遥感图像分类API服务 (http://127.0.0.1:8001)..."
-echo "API文档: http://127.0.0.1:8001/docs"
-echo "按 Ctrl+C 停止服务"
-uvicorn backend.main:app --host 127.0.0.1 --port 8001 --reload
+# 启动 FastAPI 服务
+echo ""
+echo "启动遥感图像分类 API 服务..."
+echo "  地址: http://0.0.0.0:8001"
+echo "  文档: http://0.0.0.0:8001/docs"
+echo "  按 Ctrl+C 停止服务"
+echo ""
+
+cd "$PROJECT_ROOT" && uv run --project "$BACKEND_DIR" uvicorn backend.main:app --host 0.0.0.0 --port 8001 --reload

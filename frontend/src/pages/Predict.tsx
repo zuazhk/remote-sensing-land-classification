@@ -3,8 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card"
 import { Button } from "../components/ui/Button";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import axios from "axios";
-
-const API_BASE = "http://127.0.0.1:8001/api/v1";
+import { API_ENDPOINTS } from "../config/api";
 
 const Predict: React.FC = () => {
   const [selectedModel, setSelectedModel] = useState<string>("efficientnet_b0");
@@ -12,12 +11,13 @@ const Predict: React.FC = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [predictionResult, setPredictionResult] = useState<any>(null);
   const [batchResults, setBatchResults] = useState<any>(null);
+  const [batchLoading, setBatchLoading] = useState<boolean>(false);
 
   // 获取可用模型
   const { data: models } = useQuery({
     queryKey: ["models"],
     queryFn: async () => {
-      const response = await axios.get(`${API_BASE}/models`);
+      const response = await axios.get(API_ENDPOINTS.models);
       // 将字典转换为数组
       return Object.entries(response.data).map(([key, value]) => ({
         key,
@@ -30,7 +30,7 @@ const Predict: React.FC = () => {
   // 预测突变
   const predictMutation = useMutation({
     mutationFn: async (formData: FormData) => {
-      const response = await axios.post(`${API_BASE}/predict?model=${selectedModel}`, formData, {
+      const response = await axios.post(`${API_ENDPOINTS.predict}?model=${selectedModel}`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       return response.data;
@@ -67,6 +67,9 @@ const Predict: React.FC = () => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
+    setBatchLoading(true);
+    setBatchResults(null);
+
     const formData = new FormData();
     files.forEach((file) => {
       formData.append("files", file); // 注意：API期望的字段是'files'，不是'images'
@@ -74,20 +77,19 @@ const Predict: React.FC = () => {
 
     try {
       const response = await axios.post(
-        `${API_BASE}/predict/batch?model=${selectedModel}`,
+        `${API_ENDPOINTS.predictBatch}?model=${selectedModel}`,
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
         },
       );
       setBatchResults(response.data);
-      alert(
-        `批量预测完成，处理了 ${response.data.total} 张图像，成功 ${response.data.successful} 张`,
-      );
     } catch (error) {
       console.error("批量预测失败:", error);
       alert("批量预测失败");
       setBatchResults(null);
+    } finally {
+      setBatchLoading(false);
     }
   };
 
@@ -148,15 +150,16 @@ const Predict: React.FC = () => {
               <Button onClick={handlePredict} disabled={!selectedFile || predictMutation.isPending}>
                 {predictMutation.isPending ? "预测中..." : "开始预测"}
               </Button>
-              <Button variant="outline" asChild>
+              <Button variant="outline" asChild disabled={batchLoading}>
                 <label>
-                  批量预测
+                  {batchLoading ? "批量处理中..." : "批量预测"}
                   <input
                     type="file"
                     multiple
                     accept="image/*"
                     onChange={handleBatchUpload}
                     className="hidden"
+                    disabled={batchLoading}
                   />
                 </label>
               </Button>
@@ -232,18 +235,88 @@ const Predict: React.FC = () => {
         </Card>
       </div>
 
+      {batchLoading && (
+        <Card className="mt-8">
+          <CardContent>
+            <div className="flex flex-col items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+              <p className="text-lg font-medium text-gray-700">批量处理中...</p>
+              <p className="text-sm text-gray-500 mt-2">请稍候，正在处理您的图像</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {batchResults && (
         <Card className="mt-8">
           <CardHeader>
-            <CardTitle>批量预测结果</CardTitle>
+            <div className="flex justify-between items-center">
+              <CardTitle>批量预测结果</CardTitle>
+              <div className="flex space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const csvContent = [
+                      ["文件名", "预测类别", "置信度", "类别ID"],
+                      ...batchResults.results.map((item: any) => [
+                        item.filename,
+                        item.result.error ? "ERROR" : item.result.class,
+                        item.result.error ? 0 : item.result.confidence,
+                        item.result.error ? item.result.error : item.result.class_id,
+                      ]),
+                    ]
+                      .map((row) => row.join(","))
+                      .join("\n");
+                    const blob = new Blob(["\ufeff" + csvContent], {
+                      type: "text/csv;charset=utf-8;",
+                    });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement("a");
+                    link.href = url;
+                    link.download = `prediction_results_${batchResults.model}.csv`;
+                    link.click();
+                  }}
+                >
+                  导出 CSV
+                </Button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-blue-800">
-                处理了 <span className="font-bold">{batchResults.total}</span> 张图像， 成功{" "}
-                <span className="font-bold">{batchResults.successful}</span> 张， 使用模型{" "}
-                <span className="font-bold">{batchResults.model}</span>
-              </p>
+            <div className="mb-4 p-4 rounded-lg border" style={{
+              backgroundColor: batchResults.failed > 0 ? '#fef2f2' : '#f0fdf4',
+              borderColor: batchResults.failed > 0 ? '#fecaca' : '#bbf7d0'
+            }}>
+              <div className="flex justify-between items-center">
+                <div>
+                  <p style={{ color: batchResults.failed > 0 ? '#991b1b' : '#166534' }}>
+                    处理了 <span className="font-bold">{batchResults.total}</span> 张图像
+                    {batchResults.failed > 0 ? (
+                      <>, 成功 <span className="font-bold text-green-700">{batchResults.successful}</span> 张, 失败 <span className="font-bold text-red-700">{batchResults.failed}</span> 张</>
+                    ) : (
+                      <>, 全部成功</>
+                    )}
+                  </p>
+                  <p className="text-sm mt-1 opacity-75">使用模型: {batchResults.model}</p>
+                </div>
+                {batchResults.failed > 0 && (
+                  <div className="text-sm text-red-600">
+                    <span className="font-medium">失败文件:</span>
+                    <ul className="mt-1 list-disc list-inside">
+                      {batchResults.results
+                        .filter((item: any) => item.result.error)
+                        .slice(0, 3)
+                        .map((item: any, idx: number) => (
+                          <li key={idx} className="truncate max-w-xs">{item.filename}</li>
+                        ))}
+                      {batchResults.results.filter((item: any) => item.result.error).length > 3 && (
+                        <li>...等 {batchResults.results.filter((item: any) => item.result.error).length - 3} 个文件</li>
+                      )}
+                    </ul>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="space-y-4 max-h-96 overflow-y-auto">

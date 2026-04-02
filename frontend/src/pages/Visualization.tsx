@@ -13,8 +13,7 @@ import {
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
-
-const API_BASE = "http://127.0.0.1:8001/api/v1";
+import { API_ENDPOINTS } from "../config/api";
 
 const Visualization: React.FC = () => {
   const [selectedModel, setSelectedModel] = useState<string>("efficientnet_b0");
@@ -30,7 +29,7 @@ const Visualization: React.FC = () => {
   const { data: models } = useQuery({
     queryKey: ["models"],
     queryFn: async () => {
-      const response = await axios.get(`${API_BASE}/models`);
+      const response = await axios.get(API_ENDPOINTS.models);
       // API返回的是字典，需要转换为数组
       return Object.entries(response.data).map(([key, value]: [string, any]) => ({
         key,
@@ -45,7 +44,7 @@ const Visualization: React.FC = () => {
     queryKey: ["confusion-matrix", selectedModel],
     queryFn: async () => {
       const response = await axios.get(
-        `${API_BASE}/visualization/confusion-matrix/${selectedModel}`,
+        API_ENDPOINTS.visualization.confusionMatrix(selectedModel),
       );
       return response.data;
     },
@@ -56,7 +55,7 @@ const Visualization: React.FC = () => {
   const { data: rocData } = useQuery({
     queryKey: ["roc-curves", selectedModel],
     queryFn: async () => {
-      const response = await axios.get(`${API_BASE}/visualization/roc-curves/${selectedModel}`);
+      const response = await axios.get(API_ENDPOINTS.visualization.rocCurves(selectedModel));
       return response.data;
     },
     enabled: activeTab === "roc",
@@ -67,7 +66,7 @@ const Visualization: React.FC = () => {
     queryKey: ["training-history", selectedModel],
     queryFn: async () => {
       const response = await axios.get(
-        `${API_BASE}/visualization/training-history/${selectedModel}`,
+        API_ENDPOINTS.visualization.trainingHistory(selectedModel),
       );
       return response.data;
     },
@@ -79,7 +78,7 @@ const Visualization: React.FC = () => {
     queryKey: ["feature-visualization", selectedModel],
     queryFn: async () => {
       const response = await axios.get(
-        `${API_BASE}/visualization/feature-visualization/${selectedModel}`,
+        API_ENDPOINTS.visualization.featureVisualization(selectedModel),
       );
       return response.data;
     },

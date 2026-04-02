@@ -177,7 +177,7 @@ def load_evaluation_results(filepath: str) -> Dict[str, Any]:
 
 def get_evaluation_results_path(model_key: str) -> Path:
     """获取评估结果文件路径"""
-    from backend.lib.config import NEW_MODELS_DIR
+    from ..lib.config import NEW_MODELS_DIR
 
     return NEW_MODELS_DIR / model_key / "evaluation_results.json"
 

@@ -277,6 +277,34 @@ npm test
 3. **求职作品集导向**: 展示全栈开发能力和深度学习应用经验
 4. **完整功能迁移**: 确保所有原始功能在新架构中可用
 
+## 更新日志
+
+### v0.2.0 (2026-04-02)
+
+#### 后端改进
+- **导入系统重构**: 所有导入改为相对导入，移除 `sys.path` hack
+- **启动方式优化**: 支持 `uv run python -m backend` 启动
+- **批量处理增强**: 新增 `failed` 字段，返回失败文件数量
+
+#### 前端改进
+- **API配置中心化**: 创建 `src/config/api.ts`，统一管理API端点
+- **环境变量支持**: 使用 `VITE_API_BASE_URL` 环境变量配置API地址
+- **批量处理优化**: 
+  - 添加加载动画和禁用状态
+  - 显示成功/失败统计
+  - 失败文件列表展示
+  - 导出CSV按钮
+
+#### 新增文件
+- `backend/__main__.py` - Python模块入口
+- `frontend/.env` - 前端环境变量配置
+- `frontend/.env.example` - 环境变量示例
+- `frontend/src/config/api.ts` - API配置模块
+
+#### 配置说明
+- 后端默认端口: `8000`
+- 前端API地址: 通过 `VITE_API_BASE_URL` 环境变量配置
+
 ## 许可证
 
 MIT License

@@ -2,6 +2,7 @@ import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card";
+import { API_ENDPOINTS } from "../config/api";
 import {
   BarChart,
   Bar,
@@ -13,8 +14,6 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-const API_BASE = "http://127.0.0.1:8001/api/v1";
-
 const Compare: React.FC = () => {
   // 获取模型对比数据
   const {
@@ -24,7 +23,7 @@ const Compare: React.FC = () => {
   } = useQuery({
     queryKey: ["model-comparison"],
     queryFn: async () => {
-      const response = await axios.get(`${API_BASE}/visualization/model-comparison`);
+      const response = await axios.get(API_ENDPOINTS.visualization.modelComparison);
       return response.data;
     },
     retry: 2,

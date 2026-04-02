@@ -3,21 +3,21 @@
 引用原始biye项目的模型和数据资源
 """
 
-import sys
 from pathlib import Path
 
 # 首先导入新的config模块获取正确的路径
-from backend.config import MODELS_DIR as CORRECT_MODELS_DIR, EuroSAT_CLASSES
+from .config import MODELS_DIR as CORRECT_MODELS_DIR, EuroSAT_CLASSES
 
 # 导出这些名称以保持兼容性
 MODELS_DIR = CORRECT_MODELS_DIR
 
 # 导入lib.config并修改其MODELS_DIR指向正确路径
-import backend.lib.config
-backend.lib.config.MODELS_DIR = Path(CORRECT_MODELS_DIR)
+from .lib import config
+
+config.MODELS_DIR = Path(CORRECT_MODELS_DIR)
 
 # 现在导入load_all_models，它将使用已修补的MODELS_DIR
-from backend.lib.inference import load_all_models
+from .lib.inference import load_all_models
 
 # 模型分类器 - 使用原始项目的模型加载函数
 classifiers = load_all_models()

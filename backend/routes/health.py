@@ -10,7 +10,7 @@ router = APIRouter()
 @router.get("/health")
 async def health_check():
     """健康检查端点"""
-    from backend.shared import classifiers
+    from ..shared import classifiers
 
     return {
         "status": "ok",

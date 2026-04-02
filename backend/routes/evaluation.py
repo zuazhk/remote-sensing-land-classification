@@ -9,7 +9,7 @@ from typing import Dict, List, Any
 import numpy as np
 import time
 
-from backend.shared import validate_model_key, EuroSAT_CLASSES
+from ..shared import validate_model_key, EuroSAT_CLASSES
 
 router = APIRouter()
 

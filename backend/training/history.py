@@ -119,7 +119,7 @@ def load_training_history(filepath: str) -> TrainingHistory:
 
 def get_training_history_path(model_key: str) -> Path:
     """获取训练历史文件路径"""
-    from backend.lib.config import NEW_TRAINING_HISTORY_DIR
+    from ..lib.config import NEW_TRAINING_HISTORY_DIR
 
     return NEW_TRAINING_HISTORY_DIR / f"{model_key}_history.json"
 

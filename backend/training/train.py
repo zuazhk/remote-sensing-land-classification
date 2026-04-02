@@ -13,10 +13,10 @@ import json
 from typing import Optional, Dict, Any, List
 import sys
 
-# 使用绝对导入
-from backend.lib.model import get_model, count_parameters
-from backend.lib.dataset import load_eurosat_dataset
-from backend.lib.config import (
+# 使用相对导入
+from ..lib.model import get_model, count_parameters
+from ..lib.dataset import load_eurosat_dataset
+from ..lib.config import (
     NEW_MODELS_DIR,
     NEW_TRAINING_HISTORY_DIR,
     ORIGINAL_DATA_DIR,
@@ -27,8 +27,8 @@ from backend.lib.config import (
     EuroSAT_CLASSES,
     NUM_CLASSES,
 )
-from backend.training.history import TrainingHistory, save_training_history
-from backend.training.evaluation import evaluate_model, save_evaluation_results
+from .history import TrainingHistory, save_training_history
+from .evaluation import evaluate_model, save_evaluation_results
 
 
 def train_one_epoch(

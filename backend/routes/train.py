@@ -14,15 +14,15 @@ from datetime import datetime
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from pydantic import BaseModel, Field
 
-from backend.lib.config import (
+from ..lib.config import (
     MODELS,
     NEW_TRAINING_HISTORY_DIR,
     DEFAULT_EPOCHS,
     DEFAULT_BATCH_SIZE,
     DEFAULT_LEARNING_RATE,
 )
-from backend.training.train import train_cnn_model, train_transformer_feature_model
-from backend.training.history import load_training_history
+from ..training.train import train_cnn_model, train_transformer_feature_model
+from ..training.history import load_training_history
 
 router = APIRouter()
 

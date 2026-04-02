@@ -6,7 +6,7 @@
 from fastapi import APIRouter
 from pathlib import Path
 
-from backend.shared import MODELS_DIR, EuroSAT_CLASSES, classifiers
+from ..shared import MODELS_DIR, EuroSAT_CLASSES, classifiers
 
 router = APIRouter()
 
