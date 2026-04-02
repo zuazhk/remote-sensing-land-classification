@@ -10,8 +10,8 @@
 
 - **前后端分离架构**: RESTful API + SPA前端，清晰的责任分离
 - **现代化技术栈**: 
-  - 后端: FastAPI + PyTorch + Python 3.12
-  - 前端: React + TypeScript + Vite 6.2.0
+  - 后端: FastAPI + PyTorch + Python 3.12 + uv
+  - 前端: React + TypeScript + vite-plus v0.1.15
 - **完整的功能迁移**:
   - 图像分类预测 (单图/批量)
   - 多模型对比分析
@@ -289,6 +289,12 @@ npm test
 #### 前端改进
 - **API配置中心化**: 创建 `src/config/api.ts`，统一管理API端点
 - **环境变量支持**: 使用 `VITE_API_BASE_URL` 环境变量配置API地址
+- **vite-plus 升级**: 从 v0.1.11 升级到 v0.1.15
+  - vite: 8.0.0 → 8.0.3
+  - rolldown: 1.0.0-rc.9 → 1.0.0-rc.12
+  - vitest: 4.1.0 → 4.1.2
+  - oxfmt: 0.40.0 → 0.43.0
+  - oxlint: 1.55.0 → 1.58.0
 - **批量处理优化**: 
   - 添加加载动画和禁用状态
   - 显示成功/失败统计
@@ -304,6 +310,7 @@ npm test
 #### 配置说明
 - 后端默认端口: `8000`
 - 前端API地址: 通过 `VITE_API_BASE_URL` 环境变量配置
+- 构建工具: vite-plus v0.1.15（包含 vite v8.0.3）
 
 ## 许可证
 
