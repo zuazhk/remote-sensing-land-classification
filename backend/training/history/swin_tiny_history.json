@@ -1,0 +1,33 @@
+{
+  "model_key": "swin_tiny",
+  "start_time": "2026-04-03T15:17:28.291253",
+  "end_time": "2026-04-03T15:35:41.332828",
+  "epochs": [
+    1
+  ],
+  "train_loss": [
+    0.21004125929568374
+  ],
+  "train_accuracy": [
+    93.17460317460318
+  ],
+  "val_loss": [
+    0.06491100043975051
+  ],
+  "val_accuracy": [
+    97.70370370370371
+  ],
+  "learning_rate": [
+    9.990133642141359e-05
+  ],
+  "time_elapsed": [
+    1026.2583136558533
+  ],
+  "best_val_accuracy": 97.70370370370371,
+  "final_test_accuracy": 98.04938271604938,
+  "best_epoch": 1,
+  "evaluation_available": false,
+  "evaluation_path": null,
+  "total_epochs": 1,
+  "total_training_time": 1026.2583136558533
+}

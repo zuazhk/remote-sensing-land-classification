@@ -138,7 +138,7 @@ def train_model(
     if model_key == "swin_tiny_feature":
         print("\n模式: 仅训练分类头 (Feature Extractor)")
         for name, param in model.named_parameters():
-            if not name.startswith("head"):
+            if not name.startswith("head") and not name.startswith("base_model.head"):
                 param.requires_grad = False
         trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
         print(
@@ -170,6 +170,26 @@ def train_model(
 
     best_val_acc = 0.0
     best_model_path = save_dir / "best_model.pth"
+    existing_model_path = save_dir / "existing_model_backup.pth"
+
+    # 检查是否已有最佳模型
+    if best_model_path.exists():
+        print(f"\n检测到已有模型: {best_model_path}")
+        print("正在评估现有模型性能...")
+        existing_model = get_model(model_key, num_classes=NUM_CLASSES).to(device)
+        existing_model.load_state_dict(
+            torch.load(best_model_path, map_location=device, weights_only=True)
+        )
+        existing_model.eval()
+        _, existing_best_val_acc = validate(
+            existing_model, val_loader, criterion, device
+        )
+        best_val_acc = existing_best_val_acc
+        print(f"现有模型最佳验证准确率: {best_val_acc:.2f}%")
+        print(f"训练目标: 超过 {best_val_acc:.2f}%\n")
+        del existing_model
+    else:
+        print(f"\n未检测到已有模型，从头开始训练\n")
 
     print(f"\n{'=' * 60}")
     print(f"  开始训练")
@@ -223,6 +243,11 @@ def train_model(
 
             # 保存最佳模型
             if val_acc > best_val_acc:
+                # 如果已有旧模型，先备份
+                if best_model_path.exists():
+                    import shutil
+
+                    shutil.copy2(str(best_model_path), str(existing_model_path))
                 best_val_acc = val_acc
                 torch.save(model.state_dict(), best_model_path)
                 print(f"  ✓ 保存最佳模型 (验证准确率: {val_acc:.2f}%)")
@@ -274,6 +299,34 @@ def train_model(
             "interrupted": training_interrupted,
             "completed_epochs": completed_epochs,
         }
+
+    # 检查新模型是否超过旧模型
+    model_surpassed = True
+    if existing_model_path.exists():
+        # 加载当前模型进行评估
+        current_model = get_model(model_key, num_classes=NUM_CLASSES).to(device)
+        current_model.load_state_dict(
+            torch.load(best_model_path, map_location=device, weights_only=True)
+        )
+        current_model.eval()
+        _, current_val_acc = validate(current_model, val_loader, criterion, device)
+        del current_model
+
+        if current_val_acc <= best_val_acc and not training_interrupted:
+            model_surpassed = False
+            print(
+                f"\n新模型验证准确率 ({current_val_acc:.2f}%) 未超过现有模型 ({best_val_acc:.2f}%)"
+            )
+            print("保留现有模型，不覆盖")
+            # 恢复原有模型
+            import shutil
+
+            shutil.move(str(existing_model_path), str(best_model_path))
+        else:
+            # 新模型更好，删除备份
+            existing_model_path.unlink(missing_ok=True)
+            print(f"\n新模型验证准确率 ({current_val_acc:.2f}%) 超过或等于现有模型")
+            print("已更新最佳模型")
 
     # 加载最佳模型进行评估
     print("\n正在加载最佳模型进行测试...")

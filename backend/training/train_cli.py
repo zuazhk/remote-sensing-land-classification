@@ -2,7 +2,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from .lib.config import (
+from ..lib.config import (
     NEW_MODELS_DIR,
     NEW_TRAINING_HISTORY_DIR,
     ORIGINAL_DATA_DIR,
@@ -102,7 +102,7 @@ def main():
     print(f"训练历史目录: {NEW_TRAINING_HISTORY_DIR}")
     print("=" * 60)
 
-    from .training.train import train_model
+    from .train import train_model
 
     try:
         result = train_model(
