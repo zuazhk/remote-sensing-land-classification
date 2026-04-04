@@ -37,6 +37,18 @@ uv run python -m backend.training.train_cli --model efficientnet_b0 --epochs 30
 
 > **RTX 3050 (4GB 显存) 用户注意**：训练 Swin Transformer 时请将 `--batch-size` 降至 **16**，防止显存溢出 (OOM)。
 
+## 预训练权重
+
+项目会自动下载预训练权重并保存到 `backend/pretrained_weights/` 目录，后续训练直接复用，不再联网下载。
+
+| 模型 | 权重路径 |
+|------|----------|
+| EfficientNet-B0 | `backend/pretrained_weights/hub/checkpoints/efficientnet_b0.ra_in1k-...` |
+| Swin Transformer | `backend/pretrained_weights/hub/checkpoints/swin_tiny_patch4_window7_224.safetensors` |
+
+> **首次训练**：需要联网下载权重（约 20-100MB），下载后自动缓存到项目目录。
+> **下载失败？** 设置国内镜像源：`export HF_ENDPOINT=https://hf-mirror.com`
+
 ## 模型推荐配置
 
 ### EfficientNet-B0 (CNN)
@@ -121,7 +133,7 @@ uv run python -m backend.training.train_cli \
 - 降低 `--batch-size`（Swin Transformer 从 32 降到 16 或 8）
 - 关闭其他占用显存的程序
 
-### 6. 下载预训练权重失败
+### 4. 下载预训练权重失败
 **解决**：设置国内镜像源
 ```bash
 export HF_ENDPOINT=https://hf-mirror.com
