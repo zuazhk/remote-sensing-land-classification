@@ -336,6 +336,7 @@ def train_model(
         }
 
     # 检查新模型是否超过旧模型
+    model_surpassed = True
     if existing_model_path.exists():
         # 加载当前模型进行评估
         current_model = get_model(model_key, num_classes=NUM_CLASSES).to(device)
@@ -351,7 +352,7 @@ def train_model(
             print(
                 f"\n新模型验证准确率 ({current_val_acc:.2f}%) 未超过现有模型 ({best_val_acc:.2f}%)"
             )
-            print("保留现有模型，不覆盖")
+            print("保留现有模型和训练历史，不覆盖")
             # 恢复原有模型
             shutil.move(str(existing_model_path), str(best_model_path))
         else:
@@ -359,6 +360,21 @@ def train_model(
             existing_model_path.unlink(missing_ok=True)
             print(f"\n新模型验证准确率 ({current_val_acc:.2f}%) 超过或等于现有模型")
             print("已更新最佳模型")
+
+    # 只有新模型超过旧模型时才保存训练历史
+    if not model_surpassed:
+        print("\n注意: 新模型未超过旧模型，保留原有训练历史")
+        return {
+            "model_key": model_key,
+            "best_val_accuracy": best_val_acc,
+            "test_accuracy": 0.0,
+            "history": None,
+            "model_path": str(best_model_path),
+            "save_dir": str(save_dir),
+            "interrupted": training_interrupted,
+            "completed_epochs": completed_epochs,
+            "model_surpassed": False,
+        }
 
     # 加载最佳模型进行评估
     print("\n正在加载最佳模型进行测试...")
