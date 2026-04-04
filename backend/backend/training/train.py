@@ -10,6 +10,7 @@ import torch.optim as optim
 from pathlib import Path
 import time
 import json
+import shutil
 from typing import Optional, Dict, Any, List
 import sys
 
@@ -48,6 +49,7 @@ def train_one_epoch(
         outputs = model(inputs)
         loss = criterion(outputs, targets)
         loss.backward()
+        torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
         optimizer.step()
 
         running_loss += loss.item()
@@ -163,11 +165,24 @@ def train_model(
     # 训练设置
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
-    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
+
+    # 学习率预热 + 余弦退火
+    warmup_epochs = 5
+    scheduler = optim.lr_scheduler.SequentialLR(
+        optimizer,
+        schedulers=[
+            optim.lr_scheduler.LinearLR(
+                optimizer, start_factor=0.1, total_iters=warmup_epochs
+            ),
+            optim.lr_scheduler.CosineAnnealingLR(
+                optimizer, T_max=epochs - warmup_epochs
+            ),
+        ],
+        milestones=[warmup_epochs],
+    )
 
     # 早停机制
     early_stop_counter = 0
-    best_val_acc_for_early_stop = 0.0
 
     # 创建保存目录
     save_dir = NEW_MODELS_DIR / model_key
@@ -253,11 +268,8 @@ def train_model(
             if val_acc > best_val_acc:
                 # 如果已有旧模型，先备份
                 if best_model_path.exists():
-                    import shutil
-
                     shutil.copy2(str(best_model_path), str(existing_model_path))
                 best_val_acc = val_acc
-                best_val_acc_for_early_stop = val_acc
                 torch.save(model.state_dict(), best_model_path)
                 print(f"  ✓ 保存最佳模型 (验证准确率: {val_acc:.2f}%)")
                 early_stop_counter = 0
@@ -318,7 +330,6 @@ def train_model(
         }
 
     # 检查新模型是否超过旧模型
-    model_surpassed = True
     if existing_model_path.exists():
         # 加载当前模型进行评估
         current_model = get_model(model_key, num_classes=NUM_CLASSES).to(device)
@@ -336,8 +347,6 @@ def train_model(
             )
             print("保留现有模型，不覆盖")
             # 恢复原有模型
-            import shutil
-
             shutil.move(str(existing_model_path), str(best_model_path))
         else:
             # 新模型更好，删除备份
