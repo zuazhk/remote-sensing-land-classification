@@ -196,8 +196,11 @@ def train_model(
     best_model_path = save_dir / "best_model.pth"
     existing_model_path = save_dir / "existing_model_backup.pth"
 
+    # 记录训练前是否存在旧模型
+    had_existing_model = best_model_path.exists()
+
     # 检查是否已有最佳模型
-    if best_model_path.exists():
+    if had_existing_model:
         print(f"\n检测到已有模型: {best_model_path}")
         print("正在评估现有模型性能...")
         existing_model = get_model(model_key, num_classes=NUM_CLASSES).to(device)
@@ -335,9 +338,9 @@ def train_model(
             "completed_epochs": completed_epochs,
         }
 
-    # 检查新模型是否超过旧模型
+    # 检查新模型是否超过旧模型 (仅在训练前确实存在旧模型时执行)
     model_surpassed = True
-    if existing_model_path.exists():
+    if had_existing_model and existing_model_path.exists():
         # 加载当前模型进行评估
         current_model = get_model(model_key, num_classes=NUM_CLASSES).to(device)
         current_model.load_state_dict(
