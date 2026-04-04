@@ -26,6 +26,17 @@ uv run python -m backend.training.train_cli --model efficientnet_b0 --epochs 30
 | `--skip-eval` | flag | False | 跳过训练后的评估 |
 | `--data-dir` | str | 默认路径 | 数据集目录路径 |
 
+## 硬件要求
+
+| 硬件 | 最低要求 | 推荐配置 |
+|------|----------|----------|
+| GPU | NVIDIA GPU (4GB 显存) | RTX 3050 / 3060 (6GB+) |
+| CPU | 4 核 | 8 核+ |
+| 内存 | 8GB | 16GB+ |
+| 磁盘 | 10GB 可用空间 | SSD |
+
+> **RTX 3050 (4GB 显存) 用户注意**：训练 Swin Transformer 时请将 `--batch-size` 降至 **16**，防止显存溢出 (OOM)。
+
 ## 模型推荐配置
 
 ### EfficientNet-B0 (CNN)
@@ -48,11 +59,14 @@ uv run python -m backend.training.train_cli \
 uv run python -m backend.training.train_cli \
     --model swin_tiny \
     --epochs 50 \
+    --batch-size 16 \
     --lr 0.0005 \
     --weight-decay 0.05 \
     --patience 10
 ```
 **预计时间**：2-4 小时（GPU）
+
+> **显存不足？** 如果仍然 OOM，将 `--batch-size` 降至 **8**。
 
 ### Swin Transformer Tiny (仅训练分类头)
 适合快速验证，仅训练最后的全连接层（7690 个参数）。
@@ -101,7 +115,13 @@ uv run python -m backend.training.train_cli \
 ### 3. 安全中断训练
 按 `Ctrl+C` 可安全中断训练，系统会自动保存当前最佳模型和训练历史。
 
-### 4. 下载预训练权重失败
+### 5. 显存溢出 (OOM)
+**症状**：训练开始后立即崩溃，提示 `CUDA out of memory`。
+**解决**：
+- 降低 `--batch-size`（Swin Transformer 从 32 降到 16 或 8）
+- 关闭其他占用显存的程序
+
+### 6. 下载预训练权重失败
 **解决**：设置国内镜像源
 ```bash
 export HF_ENDPOINT=https://hf-mirror.com
