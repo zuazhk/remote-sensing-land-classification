@@ -183,6 +183,7 @@ def train_model(
 
     # 早停机制
     early_stop_counter = 0
+    best_current_val_acc = 0.0
 
     # 创建保存目录
     save_dir = NEW_MODELS_DIR / model_key
@@ -272,13 +273,18 @@ def train_model(
                 best_val_acc = val_acc
                 torch.save(model.state_dict(), best_model_path)
                 print(f"  ✓ 保存最佳模型 (验证准确率: {val_acc:.2f}%)")
+                best_current_val_acc = val_acc
+                early_stop_counter = 0
+            elif val_acc > best_current_val_acc:
+                # 本轮训练的新最佳
+                best_current_val_acc = val_acc
                 early_stop_counter = 0
             else:
                 early_stop_counter += 1
 
             # 早停检查
             if patience > 0 and early_stop_counter >= patience:
-                print(f"\n  ⏹ 早停触发! 验证准确率连续 {patience} 轮未提升")
+                print(f"\n  ⏹ 早停触发! 本轮训练最佳验证准确率连续 {patience} 轮未提升")
                 break
 
             print()
