@@ -86,6 +86,18 @@ def main():
         choices=["cpu", "cuda"],
         help="指定设备 (默认: 自动检测)",
     )
+    parser.add_argument(
+        "--weight-decay",
+        type=float,
+        default=0.01,
+        help="权重衰减/正则化强度 (默认: 0.01)",
+    )
+    parser.add_argument(
+        "--patience",
+        type=int,
+        default=10,
+        help="早停耐心值: 验证准确率不提升的最大轮数 (默认: 10, 0=禁用)",
+    )
 
     args = parser.parse_args()
 
@@ -96,6 +108,8 @@ def main():
     print(f"轮数: {args.epochs}")
     print(f"批次大小: {args.batch_size}")
     print(f"学习率: {args.lr}")
+    print(f"权重衰减: {args.weight_decay}")
+    print(f"早停耐心值: {args.patience}")
     print(f"图像尺寸: {args.image_size}")
     print(f"数据目录: {args.data_dir}")
     print(f"模型保存目录: {NEW_MODELS_DIR}")
@@ -111,6 +125,8 @@ def main():
             epochs=args.epochs,
             batch_size=args.batch_size,
             lr=args.lr,
+            weight_decay=args.weight_decay,
+            patience=args.patience,
             image_size=args.image_size,
             device=args.device,
             save_history=True,

@@ -103,6 +103,8 @@ def train_model(
     epochs: int = DEFAULT_EPOCHS,
     batch_size: int = DEFAULT_BATCH_SIZE,
     lr: float = DEFAULT_LEARNING_RATE,
+    weight_decay: float = 0.01,
+    patience: int = 10,
     image_size: int = DEFAULT_IMAGE_SIZE,
     device: Optional[str] = None,
     save_history: bool = True,
@@ -123,6 +125,8 @@ def train_model(
     print(f"训练轮数: {epochs}")
     print(f"批次大小: {batch_size}")
     print(f"学习率: {lr}")
+    print(f"权重衰减: {weight_decay}")
+    print(f"早停耐心值: {patience if patience > 0 else '禁用'}")
     print(f"图像尺寸: {image_size}")
     print(f"{'=' * 60}\n")
 
@@ -158,8 +162,12 @@ def train_model(
 
     # 训练设置
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=0.01)
+    optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
+
+    # 早停机制
+    early_stop_counter = 0
+    best_val_acc_for_early_stop = 0.0
 
     # 创建保存目录
     save_dir = NEW_MODELS_DIR / model_key
@@ -249,8 +257,17 @@ def train_model(
 
                     shutil.copy2(str(best_model_path), str(existing_model_path))
                 best_val_acc = val_acc
+                best_val_acc_for_early_stop = val_acc
                 torch.save(model.state_dict(), best_model_path)
                 print(f"  ✓ 保存最佳模型 (验证准确率: {val_acc:.2f}%)")
+                early_stop_counter = 0
+            else:
+                early_stop_counter += 1
+
+            # 早停检查
+            if patience > 0 and early_stop_counter >= patience:
+                print(f"\n  ⏹ 早停触发! 验证准确率连续 {patience} 轮未提升")
+                break
 
             print()
 
