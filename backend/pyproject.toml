@@ -51,4 +51,4 @@ ignore = []
 known-first-party = ["backend"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["."]
+packages = ["backend"]

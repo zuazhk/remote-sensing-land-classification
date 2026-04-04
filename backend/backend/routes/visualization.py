@@ -500,13 +500,27 @@ async def get_feature_visualization(model_key: str):
                 },
             ]
 
+        # 尝试加载预生成的特征图元数据
+        feature_maps_path = NEW_MODELS_DIR / model_key / "feature_maps" / "layers.json"
+        if feature_maps_path.exists():
+            try:
+                with open(feature_maps_path, "r", encoding="utf-8") as f:
+                    feature_data = json.load(f)
+                return {
+                    "model": model_key,
+                    "layers": feature_data.get("layers", []),
+                    "total_layers": len(feature_data.get("layers", [])),
+                    "data_source": "预生成特征图（基于样本图像）",
+                }
+            except Exception as e:
+                print(f"加载预生成特征图失败: {e}")
+
         return {
             "model": model_key,
             "layers": layers,
             "total_layers": len(layers),
-            "note": "此处提供真实的模型层结构信息。由于特征图生成需要大量计算且依赖具体输入图像，未提供实时特征可视化。如需特征分析，建议使用模型推理端点并自行提取中间层激活。",
+            "note": "特征图需要预生成，请运行: uv run python -m backend.scripts.generate_feature_maps",
             "data_source": "真实模型架构（基于timm库的EfficientNet和Swin Transformer实现）",
-            "recommendation": "对于真实特征可视化，建议：1) 选择样本图像通过/predict端点推理；2) 使用hook技术提取中间层激活；3) 可视化关键通道的特征响应。",
         }
     except HTTPException:
         raise
@@ -514,60 +528,79 @@ async def get_feature_visualization(model_key: str):
         raise HTTPException(status_code=500, detail=f"获取特征可视化数据失败: {str(e)}")
 
 
-@router.get("/visualization/feature-map/{model_key}/{layer}/{channel}")
+@router.get("/visualization/feature-maps/{model_key}/{layer}/{channel}")
 async def get_feature_map(model_key: str, layer: str, channel: str):
-    """获取特征图图像（真实数据说明）"""
+    """获取预生成的特征图 PNG"""
     try:
         validate_model_key(model_key)
 
-        # 验证层和通道格式
-        if not channel.startswith("channel_"):
-            raise HTTPException(status_code=400, detail=f"无效的通道格式: {channel}")
+        feature_map_path = NEW_MODELS_DIR / model_key / "feature_maps" / layer / channel
+        if not feature_map_path.exists():
+            raise HTTPException(
+                status_code=404, detail=f"特征图不存在: {feature_map_path}"
+            )
 
-        # 生成说明性SVG，解释真实特征图未生成的原因
-        svg_content = f"""<?xml version="1.0" encoding="UTF-8"?>
-<svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
-  <rect width="100%" height="100%" fill="#f8f9fa"/>
-  
-  <!-- 标题 -->
-  <text x="200" y="40" text-anchor="middle" font-family="Arial" font-size="18" font-weight="bold" fill="#333">
-    特征图可视化说明
-  </text>
-  
-  <!-- 模型信息 -->
-  <text x="200" y="80" text-anchor="middle" font-family="Arial" font-size="14" fill="#555">
-    模型: {model_key} | 层: {layer} | 通道: {channel}
-  </text>
-  
-  <!-- 说明框 -->
-  <rect x="50" y="100" width="300" height="140" rx="10" ry="10" fill="#fff" stroke="#ddd" stroke-width="1"/>
-  
-  <!-- 说明文字 -->
-  <text x="200" y="130" text-anchor="middle" font-family="Arial" font-size="12" fill="#666">
-    真实特征图生成需要：
-  </text>
-  
-  <g font-family="Arial" font-size="11" fill="#444">
-    <text x="70" y="160">• 具体的输入图像</text>
-    <text x="70" y="180">• 模型前向传播计算</text>
-    <text x="70" y="200">• 中间层激活提取</text>
-    <text x="70" y="220">• 激活值归一化与可视化</text>
-  </g>
-  
-  <!-- 建议 -->
-  <text x="200" y="260" text-anchor="middle" font-family="Arial" font-size="11" fill="#007bff">
-    建议：使用/predict端点推理并自行提取特征
-  </text>
-  
-  <!-- 底部边框 -->
-  <line x1="50" y1="280" x2="350" y2="280" stroke="#ddd" stroke-width="1"/>
-</svg>"""
+        from fastapi.responses import FileResponse
 
-        from fastapi import Response
-
-        return Response(content=svg_content, media_type="image/svg+xml")
+        return FileResponse(str(feature_map_path), media_type="image/png")
 
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"生成特征图失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"获取特征图失败: {str(e)}")
+
+
+@router.get("/visualization/architecture/{model_key}")
+async def get_model_architecture(model_key: str):
+    """获取模型架构信息（混合方案：配置文件 + 训练历史）"""
+    try:
+        validate_model_key(model_key)
+
+        from ..lib.architectures import ARCHITECTURES
+
+        arch_config = ARCHITECTURES.get(model_key)
+        if not arch_config:
+            raise HTTPException(
+                status_code=404, detail=f"模型架构配置不存在: {model_key}"
+            )
+
+        # 从训练历史读取性能指标
+        history_path = NEW_TRAINING_HISTORY_DIR / f"{model_key}_history.json"
+        training_metrics = {}
+        if history_path.exists():
+            try:
+                with open(history_path, "r", encoding="utf-8") as f:
+                    history_data = json.load(f)
+                training_metrics = {
+                    "best_val_accuracy": history_data.get("best_val_accuracy", 0),
+                    "final_test_accuracy": history_data.get("final_test_accuracy", 0),
+                    "best_epoch": history_data.get("best_epoch", 0),
+                    "total_epochs": history_data.get("total_epochs", 0),
+                    "total_training_time": history_data.get("total_training_time", 0),
+                    "epochs_data": {
+                        "epochs": history_data.get("epochs", []),
+                        "train_loss": history_data.get("train_loss", []),
+                        "train_accuracy": history_data.get("train_accuracy", []),
+                        "val_loss": history_data.get("val_loss", []),
+                        "val_accuracy": history_data.get("val_accuracy", []),
+                    },
+                }
+            except Exception as e:
+                print(f"读取训练历史失败 {model_key}: {e}")
+
+        return {
+            "model_key": model_key,
+            "name": arch_config["name"],
+            "type": arch_config["type"],
+            "description": arch_config["description"],
+            "paper": arch_config.get("paper", ""),
+            "total_params": arch_config["total_params"],
+            "architecture": arch_config["architecture"],
+            "training_config": arch_config.get("training_config", {}),
+            "training_metrics": training_metrics,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"获取模型架构失败: {str(e)}")

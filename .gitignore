@@ -153,6 +153,13 @@ Thumbs.db
 # Backend logs
 backend.log
 
+# Model weights (large files)
+backend/models/
+backend/backend/models/
+
+# uv lock file
+uv.lock
+
 # Frontend Vite cache
 .vite/
 

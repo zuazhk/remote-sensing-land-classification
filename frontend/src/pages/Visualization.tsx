@@ -13,17 +13,19 @@ import {
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
-import { API_ENDPOINTS } from "../config/api";
+import { API_ENDPOINTS, API_BASE_URL } from "../config/api";
 
 const Visualization: React.FC = () => {
   const [selectedModel, setSelectedModel] = useState<string>("efficientnet_b0");
-  const [activeTab, setActiveTab] = useState<"confusion" | "roc" | "training" | "features">(
-    "confusion",
+  const [activeTab, setActiveTab] = useState<"architecture" | "confusion" | "roc" | "training" | "features">(
+    "architecture",
   );
   // 特征可视化状态
   const [selectedLayerIndex, setSelectedLayerIndex] = useState<number>(0);
   const [currentChannelPage, setCurrentChannelPage] = useState<number>(1);
   const [channelsPerPage, setChannelsPerPage] = useState<number>(20);
+  // 模型架构状态
+  const [expandedStage, setExpandedStage] = useState<number | null>(null);
 
   // 获取模型列表
   const { data: models } = useQuery({
@@ -83,6 +85,16 @@ const Visualization: React.FC = () => {
       return response.data;
     },
     enabled: activeTab === "features",
+  });
+
+  // 获取模型架构数据
+  const { data: architectureData } = useQuery({
+    queryKey: ["architecture", selectedModel],
+    queryFn: async () => {
+      const response = await axios.get(API_ENDPOINTS.visualization.architecture(selectedModel));
+      return response.data;
+    },
+    enabled: activeTab === "architecture",
   });
 
   const renderConfusionMatrix = () => {
@@ -171,17 +183,35 @@ const Visualization: React.FC = () => {
       };
     });
 
-    const chartData: any[] = [];
-    if (classes.length > 0 && rocCurvesData[classes[0]]?.fpr) {
-      const numPoints = rocCurvesData[classes[0]].fpr.length;
-      for (let i = 0; i < numPoints; i++) {
-        const point: any = { fpr: rocCurvesData[classes[0]].fpr[i] };
-        classes.forEach((cls) => {
-          point[`tpr_${cls}`] = rocCurvesData[cls]?.tpr?.[i] || 0;
-        });
-        chartData.push(point);
-      }
-    }
+    // 统一 FPR 轴，使用线性插值解决不同类别数据点长度不一致的问题
+    const commonFpr = Array.from({ length: 101 }, (_, i) => i / 100);
+    const chartData: any[] = commonFpr.map((targetFpr) => {
+      const point: any = { fpr: targetFpr };
+      classes.forEach((cls) => {
+        const clsFpr = rocCurvesData[cls]?.fpr || [];
+        const clsTpr = rocCurvesData[cls]?.tpr || [];
+        
+        let tpr = 0;
+        if (clsFpr.length > 0) {
+          // 找到 targetFpr 在 clsFpr 中的位置
+          let idx = clsFpr.findIndex((f) => f >= targetFpr);
+          if (idx === -1) idx = clsFpr.length;
+
+          if (idx === 0) {
+            tpr = clsTpr[0] || 0;
+          } else if (idx >= clsFpr.length) {
+            tpr = clsTpr[clsTpr.length - 1] || 0;
+          } else {
+            // 线性插值
+            const f1 = clsFpr[idx - 1], f2 = clsFpr[idx];
+            const t1 = clsTpr[idx - 1], t2 = clsTpr[idx];
+            tpr = t1 + ((t2 - t1) * (targetFpr - f1)) / (f2 - f1 || 1);
+          }
+        }
+        point[`tpr_${cls}`] = tpr;
+      });
+      return point;
+    });
 
     const colors = [
       "#8884d8",
@@ -204,7 +234,7 @@ const Visualization: React.FC = () => {
               <CardTitle>ROC曲线</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-80">
+              <div className="aspect-square">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -592,7 +622,7 @@ const Visualization: React.FC = () => {
                       >
                         <div className="aspect-square flex items-center justify-center bg-gray-100">
                           <img
-                            src={url}
+                            src={url.startsWith("http") ? url : `${API_BASE_URL}${url}`}
                             alt={`${selectedLayer.layer} 通道 ${channelIndex}`}
                             className="w-full h-full object-contain p-1"
                             onError={(e) => {
@@ -724,6 +754,252 @@ const Visualization: React.FC = () => {
     );
   };
 
+  const renderArchitecture = () => {
+    if (!architectureData) return <div>加载中...</div>;
+
+    const { architecture, training_config, training_metrics } = architectureData;
+    const layers = architecture?.layers || [];
+
+    // 层类型颜色映射
+    const getLayerColor = (type: string) => {
+      const t = type.toLowerCase();
+      if (t.includes("conv") || t.includes("mbconv")) return { bg: "bg-blue-50", border: "border-blue-200", badge: "bg-blue-100 text-blue-700", text: "text-blue-700" };
+      if (t.includes("swin") || t.includes("attention") || t.includes("transformer")) return { bg: "bg-purple-50", border: "border-purple-200", badge: "bg-purple-100 text-purple-700", text: "text-purple-700" };
+      if (t.includes("pool") || t.includes("merging") || t.includes("downsample")) return { bg: "bg-orange-50", border: "border-orange-200", badge: "bg-orange-100 text-orange-700", text: "text-orange-700" };
+      if (t.includes("linear") || t.includes("head") || t.includes("classifier")) return { bg: "bg-green-50", border: "border-green-200", badge: "bg-green-100 text-green-700", text: "text-green-700" };
+      if (t.includes("norm")) return { bg: "bg-gray-50", border: "border-gray-200", badge: "bg-gray-100 text-gray-700", text: "text-gray-700" };
+      return { bg: "bg-gray-50", border: "border-gray-200", badge: "bg-gray-100 text-gray-700", text: "text-gray-700" };
+    };
+
+    // 判断是否为CNN模型（需要分组显示）
+    const isCNN = architectureData.type === "CNN";
+
+    // CNN模型按阶段分组
+    const getCNNGroups = () => {
+      const groups: { name: string; description: string; layers: any[]; indices: number[]; isFoldable: boolean }[] = [];
+      let currentBlocks: any[] = [];
+      let currentBlockIndices: number[] = [];
+
+      layers.forEach((layer: any, idx: number) => {
+        const name = layer.name || "";
+        if (name.startsWith("Block ")) {
+          currentBlocks.push(layer);
+          currentBlockIndices.push(idx);
+        } else {
+          if (currentBlocks.length > 0) {
+            groups.push({ 
+              name: `Backbone Blocks (${currentBlocks.length} Stages)`, 
+              description: "包含多个移动倒置瓶颈块 (MBConv)，逐层提取从低级到高级的视觉特征",
+              layers: currentBlocks, 
+              indices: currentBlockIndices, 
+              isFoldable: true 
+            });
+            currentBlocks = [];
+            currentBlockIndices = [];
+          }
+          groups.push({ name: name, description: layer.description || "", layers: [layer], indices: [idx], isFoldable: false });
+        }
+      });
+      if (currentBlocks.length > 0) {
+        groups.push({ 
+          name: `Backbone Blocks (${currentBlocks.length} Stages)`, 
+          description: "包含多个移动倒置瓶颈块 (MBConv)，逐层提取从低级到高级的视觉特征",
+          layers: currentBlocks, 
+          indices: currentBlockIndices, 
+          isFoldable: true 
+        });
+      }
+      return groups;
+    };
+
+    const renderLayerCard = (layer: any, idx: number, compact = false) => {
+      const colors = getLayerColor(layer.type);
+      return (
+        <div className={`w-full max-w-2xl px-3 py-2 ${colors.bg} ${colors.border} border rounded-lg hover:shadow-md transition-shadow`}>
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <span className={`font-semibold text-sm ${colors.text}`}>{layer.name}</span>
+                {!compact && <span className={`px-2 py-0.5 ${colors.badge} text-xs rounded`}>{layer.type}</span>}
+              </div>
+              {layer.description && <p className="text-xs text-gray-500 mt-0.5">{layer.description}</p>}
+            </div>
+            <div className="text-right text-xs text-gray-500 ml-4 flex-shrink-0">
+              <div>通道: {layer.channels}</div>
+              {layer.output_shape && <div className="text-blue-600 font-medium">{layer.output_shape}</div>}
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    return (
+      <div className="space-y-6">
+        {/* 模型概览 */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{architectureData.name}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="p-3 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-500">类型</p>
+                <p className="font-semibold">{architectureData.type}</p>
+              </div>
+              <div className="p-3 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-500">参数量</p>
+                <p className="font-semibold">{architectureData.total_params}</p>
+              </div>
+              {training_metrics?.best_val_accuracy && (
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-500">最佳验证准确率</p>
+                  <p className="font-semibold">{(training_metrics.best_val_accuracy * 100).toFixed(1)}%</p>
+                </div>
+              )}
+              {training_metrics?.final_test_accuracy && (
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-500">测试准确率</p>
+                  <p className="font-semibold">{(training_metrics.final_test_accuracy * 100).toFixed(1)}%</p>
+                </div>
+              )}
+            </div>
+            <p className="mt-4 text-sm text-gray-600">{architectureData.description}</p>
+            {architectureData.paper && (
+              <p className="mt-1 text-xs text-gray-500">论文: {architectureData.paper}</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* 架构图 */}
+        <Card>
+          <CardHeader>
+            <CardTitle>模型架构图</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-0">
+              {/* 输入层 */}
+              <div className="flex items-center justify-center">
+                <div className="px-4 py-2 bg-blue-100 text-blue-800 rounded-lg text-sm font-medium">
+                  输入: {architecture?.input?.shape || "224×224×3"}
+                </div>
+              </div>
+
+              {/* 各层 */}
+              {isCNN ? (
+                getCNNGroups().map((group, gIdx) => {
+                  const isExpanded = expandedStage === gIdx;
+                  const isGroup = group.isFoldable;
+                  return (
+                    <div key={gIdx} className="flex flex-col items-center">
+                      <div className="w-6 h-6 flex items-center justify-center">
+                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                        </svg>
+                      </div>
+                      {isGroup ? (
+                        <div className="w-full max-w-2xl">
+                          <button
+                            onClick={() => setExpandedStage(isExpanded ? null : gIdx)}
+                            className="w-full flex items-center justify-between px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg hover:shadow-md transition-shadow text-left"
+                          >
+                            <div className="flex items-center gap-2">
+                              <svg className={`w-4 h-4 text-blue-600 transition-transform ${isExpanded ? "rotate-90" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              </svg>
+                              <div>
+                                <span className="font-semibold text-sm text-blue-700">{group.name}</span>
+                                {group.description && <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{group.description}</p>}
+                              </div>
+                            </div>
+                            <div className="text-right text-xs text-gray-500">
+                              <span>{group.layers.length} 个块</span>
+                              {group.layers[0]?.output_shape && <span className="ml-2 text-blue-600 font-medium">{group.layers[0].output_shape}</span>}
+                            </div>
+                          </button>
+                          {isExpanded && (
+                            <div className="ml-6 mt-2 space-y-0 border-l-2 border-blue-100 pl-4">
+                              {group.layers.map((layer: any, lIdx: number) => (
+                                <div key={lIdx} className="flex flex-col items-center">
+                                  {lIdx > 0 && (
+                                    <div className="w-6 h-6 flex items-center justify-center">
+                                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                                      </svg>
+                                    </div>
+                                  )}
+                                  {renderLayerCard(layer, group.indices[lIdx], true)}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        renderLayerCard(group.layers[0], group.indices[0])
+                      )}
+                    </div>
+                  );
+                })
+              ) : (
+                layers.map((layer: any, idx: number) => (
+                  <div key={idx} className="flex flex-col items-center">
+                    <div className="w-6 h-6 flex items-center justify-center">
+                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                      </svg>
+                    </div>
+                    {renderLayerCard(layer, idx)}
+                  </div>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 超参数 */}
+        {training_config && (
+          <Card>
+            <CardHeader>
+              <CardTitle>训练超参数</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-500">优化器</p>
+                  <p className="font-semibold">{training_config.optimizer}</p>
+                </div>
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-500">学习率</p>
+                  <p className="font-semibold">{training_config.learning_rate}</p>
+                </div>
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-500">批次大小</p>
+                  <p className="font-semibold">{training_config.batch_size}</p>
+                </div>
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-500">训练轮数</p>
+                  <p className="font-semibold">{training_config.epochs}</p>
+                </div>
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-500">学习率调度</p>
+                  <p className="font-semibold">{training_config.scheduler}</p>
+                </div>
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-500">权重衰减</p>
+                  <p className="font-semibold">{training_config.weight_decay}</p>
+                </div>
+              </div>
+              {training_config.note && (
+                <div className="mt-4 p-3 bg-yellow-50 rounded-lg">
+                  <p className="text-sm text-yellow-800">注意: {training_config.note}</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6">模型可视化分析</h1>
@@ -752,6 +1028,7 @@ const Visualization: React.FC = () => {
       {/* 选项卡 */}
       <div className="flex border-b mb-6">
         {[
+          { id: "architecture", label: "模型架构" },
           { id: "confusion", label: "混淆矩阵" },
           { id: "roc", label: "ROC曲线" },
           { id: "training", label: "训练历史" },
@@ -778,6 +1055,7 @@ const Visualization: React.FC = () => {
           {activeTab === "roc" && renderROCCurves()}
           {activeTab === "training" && renderTrainingHistory()}
           {activeTab === "features" && renderFeatureVisualization()}
+          {activeTab === "architecture" && renderArchitecture()}
         </CardContent>
       </Card>
 

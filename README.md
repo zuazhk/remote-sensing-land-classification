@@ -24,22 +24,26 @@
 ```
 remote-sensing-spa/
 ├── backend/                 # FastAPI后端
-│   ├── lib/                # 原始项目模块（只读引用）
-│   ├── routes/             # API路由模块
-│   ├── config.py           # 配置文件
-│   ├── main.py             # FastAPI主应用
-│   ├── shared.py           # 共享状态和配置
-│   └── pyproject.toml      # Python项目配置
-├── frontend/               # React前端
+│   ├── backend/             # Python包（标准双层结构）
+│   │   ├── lib/             # 模型定义、配置、推理模块
+│   │   ├── routes/          # API路由模块
+│   │   ├── training/        # 模型训练模块
+│   │   ├── scripts/         # 工具脚本
+│   │   ├── models/          # 模型权重文件（不提交到git）
+│   │   ├── main.py          # FastAPI主应用
+│   │   └── __main__.py      # 模块入口
+│   ├── pyproject.toml       # Python项目配置
+│   ├── Containerfile        # Podman容器构建文件
+│   └── .dockerignore        # 容器构建排除文件
+├── frontend/                # React前端
 │   ├── src/
-│   │   ├── pages/          # 页面组件
-│   │   ├── components/     # 可复用组件
-│   │   └── App.tsx         # 主应用组件
-│   └── package.json        # 前端依赖
-├── scripts/                # 启动脚本
-├── shared/                 # 共享资源
-├── docs/                   # 项目文档
-└── README.md               # 本文件
+│   │   ├── pages/           # 页面组件
+│   │   ├── components/      # 可复用组件
+│   │   └── config/          # 配置文件
+│   ├── Containerfile        # Podman容器构建文件
+│   └── .dockerignore        # 容器构建排除文件
+├── deploy.sh                # Podman Pod一键部署脚本
+└── README.md                # 本文件
 ```
 
 ## 快速开始
@@ -48,37 +52,25 @@ remote-sensing-spa/
 
 - Python 3.12+ 和 Node.js 18+
 - Git
+- uv（Python 包管理器）
 
 ### 1. 启动后端服务
 
 ```bash
 cd remote-sensing-spa/backend
-uv venv .venv                # 创建虚拟环境
-source .venv/bin/activate    # 激活虚拟环境
-pip install -e .             # 安装依赖
-uvicorn backend.main:app --host 127.0.0.1 --port 8001 --reload
+uv run python -m backend
 ```
 
-或者使用脚本:
-```bash
-./scripts/start-backend.sh
-```
-
-后端服务将在 http://127.0.0.1:8001 启动，API文档:
-- Swagger UI: http://127.0.0.1:8001/docs
-- ReDoc: http://127.0.0.1:8001/redoc
+后端服务将在 http://0.0.0.0:8000 启动，API文档:
+- Swagger UI: http://localhost:8000/docs
+- ReDoc: http://localhost:8000/redoc
 
 ### 2. 启动前端开发服务器
 
 ```bash
 cd remote-sensing-spa/frontend
-npm install                  # 安装依赖
-npm run dev                  # 启动开发服务器
-```
-
-或者使用脚本:
-```bash
-./scripts/start-frontend.sh
+npm install                  # 安装依赖（首次运行）
+vp dev                       # 启动开发服务器
 ```
 
 前端服务将在 http://localhost:5173 启动。
@@ -99,20 +91,23 @@ npm run dev                  # 启动开发服务器
 | `/api/v1/visualization/roc-curves/{model_key}` | GET | 获取ROC曲线数据 |
 | `/api/v1/visualization/training-history/{model_key}` | GET | 获取训练历史数据 |
 | `/api/v1/visualization/feature-visualization/{model_key}` | GET | 获取特征可视化数据 |
-| `/api/v1/visualization/feature-map/{model_key}/{layer}/{channel}` | GET | 获取特征图图像 (SVG格式) |
+| `/api/v1/visualization/feature-map/{model_key}/{layer}/{channel}` | GET | 获取特征图图像 (PNG格式) |
+| `/api/v1/visualization/architecture/{model_key}` | GET | 获取模型架构信息 |
 | `/api/v1/evaluation/metrics/{model_key}` | GET | 获取模型评估指标 |
-| `/api/v1/evaluation/detailed/{model_key}` | GET | 获取详细评估报告 |
 
-完整的API文档请访问 http://127.0.0.1:8001/docs。
+完整的API文档请访问 http://localhost:8000/docs。
 
 ## 前端功能
 
 ### 页面导航
 
-1. **首页**: 项目介绍和功能概览
+1. **模型架构**: 查看模型层结构、超参数、性能指标（默认标签页）
 2. **图像分类**: 上传图像进行单图或批量分类预测
 3. **模型对比**: 可视化比较不同模型的性能指标
-4. **可视化分析**: 深入分析模型性能，包括混淆矩阵、ROC曲线、训练历史等
+4. **混淆矩阵**: 查看模型分类混淆矩阵
+5. **ROC曲线**: 查看模型ROC曲线和AUC指标
+6. **训练历史**: 查看训练/验证损失和准确率曲线
+7. **特征可视化**: 查看模型各层特征图激活模式
 
 ### 技术特点
 
@@ -123,6 +118,49 @@ npm run dev                  # 启动开发服务器
 - **现代化构建**: Vite快速构建和热重载
 
 ## 部署指南
+
+### Podman Pod 一键部署（推荐）
+
+项目使用 Podman Pod 进行容器化部署，将前端、后端、数据库放在同一个网络组中。
+
+```bash
+# 构建镜像
+./deploy.sh build
+
+# 启动服务（自动创建 Pod + 3个容器）
+./deploy.sh start
+
+# 查看状态
+./deploy.sh status
+
+# 查看日志
+./deploy.sh logs rs-backend
+
+# 停止服务
+./deploy.sh stop
+
+# 清理所有
+./deploy.sh clean
+```
+
+服务访问地址:
+- 前端应用: http://localhost:8080
+- 后端API: http://localhost:8000
+- API文档: http://localhost:8000/docs
+- 数据库: localhost:5432
+
+### 容器架构
+
+```
+Pod: remote-sensing-pod
+├── 端口 8080 → 前端 (Nginx，代理 /api/ 到后端)
+├── 端口 8000 → 后端 (FastAPI + PyTorch)
+├── 端口 5432 → PostgreSQL 16
+│
+├── 容器: rs-db (PostgreSQL)
+├── 容器: rs-backend (FastAPI)
+└── 容器: rs-frontend (Nginx)
+```
 
 ### 环境变量配置
 
@@ -278,6 +316,34 @@ npm test
 4. **完整功能迁移**: 确保所有原始功能在新架构中可用
 
 ## 更新日志
+
+### v0.3.0 (2026-04-04)
+
+#### 架构改进
+- **标准包结构**: 调整为 `backend/backend/` 双层目录结构，符合 Python 包规范
+- **统一启动命令**: 本地和容器都使用 `uv run python -m backend`
+- **预训练权重优化**: 改为 `pretrained=False`，直接加载 `best_model.pth`，启动无需联网
+
+#### 容器化部署
+- **Podman Pod 部署**: 新增 `deploy.sh` 一键部署脚本
+- **Containerfile**: 后端和前端容器构建文件
+- **Nginx 代理配置**: 前端容器自动代理 `/api/` 到后端
+- **PostgreSQL 集成**: 数据库容器已就绪（待鉴权功能开发）
+
+#### 前端优化
+- **容器适配**: 开发环境用完整 URL，生产环境用相对路径 `/api/v1`
+- **模型架构展示**: 新增"模型架构"标签页（默认），展示层结构、超参数、性能指标
+- **层卡片颜色区分**: 卷积层(蓝)、注意力层(紫)、池化层(橙)、分类头(绿)
+- **CNN 分组折叠**: EfficientNet 按 Stage 分组，点击展开查看详情
+- **ROC 曲线修复**: 使用线性插值解决数据点长度不一致导致的显示异常
+- **特征可视化**: 预生成特征图，支持层选择和通道浏览
+
+#### 后端优化
+- **训练系统**: 新增 `train_cli.py` 命令行训练工具
+- **训练保护**: 支持安全中断（Ctrl+C），自动保存最佳模型和训练历史
+- **训练输出优化**: 显示进度百分比、每轮耗时、预估剩余时间
+- **防覆盖逻辑**: 新模型未超过旧模型时不覆盖
+- **特征图生成**: 新增 `generate_feature_maps.py` 脚本
 
 ### v0.2.0 (2026-04-02)
 

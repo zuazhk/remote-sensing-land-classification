@@ -7,7 +7,7 @@ from typing import Dict, Any
 from pathlib import Path
 
 # 导入缓存模块
-from cache import cached_prediction, model_cache, prediction_cache, get_cache_stats
+from .cache import cached_prediction, model_cache, prediction_cache, get_cache_stats
 
 
 class CachedModelPredictor:
