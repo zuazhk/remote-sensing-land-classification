@@ -27,11 +27,18 @@ jobs:
       - name: Override PyTorch for CPU
         run: |
           cd backend
-          sed -i 's|torch==2.5.1+cu121|torch==2.5.1|g' pyproject.toml
-          sed -i 's|torchaudio==2.5.1+cu121|torchaudio==2.5.1|g' pyproject.toml
-          sed -i 's|torchvision==0.20.1+cu121|torchvision==0.20.1|g' pyproject.toml
-          sed -i '/^\[tool\.uv\.sources\]/,/^\[/ { /^\[tool\.uv\.sources\]/d; /^\[/!d }' pyproject.toml
-          sed -i '/^\[tool\.uv\]/,/^\[/ { /^\[tool\.uv\]/d; /^\[/!d }' pyproject.toml
+          python3 -c "
+          import re
+          with open('pyproject.toml', 'r') as f:
+              content = f.read()
+          content = content.replace('torch==2.5.1+cu121', 'torch==2.5.1')
+          content = content.replace('torchaudio==2.5.1+cu121', 'torchaudio==2.5.1')
+          content = content.replace('torchvision==0.20.1+cu121', 'torchvision==0.20.1')
+          content = re.sub(r'\n\[tool\.uv\.sources\]\n.*?(?=\n\[|\Z)', '', content, flags=re.DOTALL)
+          content = re.sub(r'\n\[tool\.uv\]\n.*?(?=\n\[|\Z)', '', content, flags=re.DOTALL)
+          with open('pyproject.toml', 'w') as f:
+              f.write(content)
+          "
 
       - name: Install dependencies
         run: cd backend && uv sync
@@ -74,11 +81,21 @@ jobs:
       - name: Override PyTorch for CPU
         run: |
           cd backend
-          sed -i 's|torch==2.5.1+cu121|torch==2.5.1|g' pyproject.toml
-          sed -i 's|torchaudio==2.5.1+cu121|torchaudio==2.5.1|g' pyproject.toml
-          sed -i 's|torchvision==0.20.1+cu121|torchvision==0.20.1|g' pyproject.toml
-          sed -i '/^\[tool\.uv\.sources\]/,/^\[/ { /^\[tool\.uv\.sources\]/d; /^\[/!d }' pyproject.toml
-          sed -i '/^\[tool\.uv\]/,/^\[/ { /^\[tool\.uv\]/d; /^\[/!d }' pyproject.toml
+          python3 -c "
+          import re
+          with open('pyproject.toml', 'r') as f:
+              content = f.read()
+          content = content.replace('torch==2.5.1+cu121', 'torch==2.5.1')
+          content = content.replace('torchaudio==2.5.1+cu121', 'torchaudio==2.5.1')
+          content = content.replace('torchvision==0.20.1+cu121', 'torchvision==0.20.1')
+          content = re.sub(r'\n\[tool\.uv\.sources\]\n.*?(?=\n\[|\Z)', '', content, flags=re.DOTALL)
+          content = re.sub(r'\n\[tool\.uv\]\n.*?(?=\n\[|\Z)', '', content, flags=re.DOTALL)
+          with open('pyproject.toml', 'w') as f:
+              f.write(content)
+          "
+
+      - name: Install dependencies
+        run: cd backend && uv sync
 
       - name: Lint backend
         run: cd backend && uv run ruff check .
