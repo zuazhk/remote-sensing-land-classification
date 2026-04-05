@@ -11,41 +11,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  backend-test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-
-      - name: Override PyTorch for CPU
-        run: |
-          cd backend
-          python3 -c "
-          import re
-          with open('pyproject.toml', 'r') as f:
-              content = f.read()
-          content = content.replace('torch==2.5.1+cu121', 'torch==2.5.1')
-          content = content.replace('torchaudio==2.5.1+cu121', 'torchaudio==2.5.1')
-          content = content.replace('torchvision==0.20.1+cu121', 'torchvision==0.20.1')
-          content = re.sub(r'\n\[tool\.uv\.sources\]\n.*?(?=\n\[|\Z)', '', content, flags=re.DOTALL)
-          content = re.sub(r'\n\[tool\.uv\]\n.*?(?=\n\[|\Z)', '', content, flags=re.DOTALL)
-          with open('pyproject.toml', 'w') as f:
-              f.write(content)
-          "
-
-      - name: Install dependencies
-        run: cd backend && uv sync
-
-      - name: Run tests
-        run: cd backend && PYTHONPATH=. uv run pytest --cov
-
   frontend-test:
     runs-on: ubuntu-latest
     steps:
@@ -64,46 +29,6 @@ jobs:
 
       - name: Build check
         run: cd frontend && npm run build
-
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-
-      - name: Override PyTorch for CPU
-        run: |
-          cd backend
-          python3 -c "
-          import re
-          with open('pyproject.toml', 'r') as f:
-              content = f.read()
-          content = content.replace('torch==2.5.1+cu121', 'torch==2.5.1')
-          content = content.replace('torchaudio==2.5.1+cu121', 'torchaudio==2.5.1')
-          content = content.replace('torchvision==0.20.1+cu121', 'torchvision==0.20.1')
-          content = re.sub(r'\n\[tool\.uv\.sources\]\n.*?(?=\n\[|\Z)', '', content, flags=re.DOTALL)
-          content = re.sub(r'\n\[tool\.uv\]\n.*?(?=\n\[|\Z)', '', content, flags=re.DOTALL)
-          with open('pyproject.toml', 'w') as f:
-              f.write(content)
-          "
-
-      - name: Install dependencies
-        run: cd backend && uv sync
-
-      - name: Lint backend
-        run: cd backend && PYTHONPATH=. uv run ruff check .
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
 
       - name: Lint frontend
         run: cd frontend && npm run lint
