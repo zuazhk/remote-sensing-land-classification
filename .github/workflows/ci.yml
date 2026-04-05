@@ -41,7 +41,7 @@ jobs:
           "
 
       - name: Install dependencies
-        run: cd backend && uv sync && uv pip install -e .
+        run: cd backend && uv sync && uv pip install --python .venv/bin/python -e .
 
       - name: Run tests
         run: cd backend && uv run pytest --cov
@@ -95,7 +95,7 @@ jobs:
           "
 
       - name: Install dependencies
-        run: cd backend && uv sync && uv pip install -e .
+        run: cd backend && uv sync && uv pip install --python .venv/bin/python -e .
 
       - name: Lint backend
         run: cd backend && uv run ruff check .
