@@ -39,15 +39,24 @@ uv run python -m backend.training.train_cli --model efficientnet_b0 --epochs 30
 
 ## 预训练权重
 
-项目会自动下载预训练权重并保存到 `backend/pretrained_weights/` 目录，后续训练直接复用，不再联网下载。
+项目使用 `timm` 库自动下载预训练权重。首次训练时会自动联网下载，后续训练直接复用本地缓存。
 
-| 模型 | 权重路径 |
-|------|----------|
-| EfficientNet-B0 | `backend/pretrained_weights/hub/checkpoints/efficientnet_b0.ra_in1k-...` |
-| Swin Transformer | `backend/pretrained_weights/hub/checkpoints/swin_tiny_patch4_window7_224.safetensors` |
-
-> **首次训练**：需要联网下载权重（约 20-100MB），下载后自动缓存到项目目录。
+> **提示**：权重文件保存在 PyTorch 默认缓存目录，无需手动管理。
 > **下载失败？** 设置国内镜像源：`export HF_ENDPOINT=https://hf-mirror.com`
+
+## 基准测试 (Benchmark)
+
+项目提供 `benchmark_inference.py` 脚本，用于获取模型的真实推理耗时。
+
+```bash
+cd ~/remote-sensing-spa/backend
+uv run python -m backend.scripts.benchmark_inference
+```
+
+**脚本逻辑**：
+1.  **预热 (Warmup)**: 先跑 10 次，让 GPU 进入最佳状态。
+2.  **基准测试**: 跑 50 次，记录每次耗时。
+3.  **统计**: 输出平均耗时、最快耗时和最慢耗时。
 
 ## 模型推荐配置
 
@@ -126,6 +135,12 @@ uv run python -m backend.training.train_cli \
 
 ### 3. 安全中断训练
 按 `Ctrl+C` 可安全中断训练，系统会自动保存当前最佳模型和训练历史。
+
+### 4. 下载预训练权重失败
+**解决**：设置国内镜像源
+```bash
+export HF_ENDPOINT=https://hf-mirror.com
+```
 
 ### 5. 显存溢出 (OOM)
 **症状**：训练开始后立即崩溃，提示 `CUDA out of memory`。

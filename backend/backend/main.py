@@ -25,6 +25,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# 抑制第三方库的冗余 INFO 日志（WARNING 及以上仍会显示）
+logging.getLogger("timm").setLevel(logging.WARNING)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+
 
 # 生命周期管理
 @asynccontextmanager
