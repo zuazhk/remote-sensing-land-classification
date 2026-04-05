@@ -64,7 +64,7 @@ start_services() {
     fi
 
     # 启动 PostgreSQL
-    if ! podman ps --pod -q --filter "name=$DB_NAME" | grep -q .; then
+    if ! podman ps -a --format '{{.Names}}' | grep -q "^${DB_NAME}$"; then
         print_info "启动 PostgreSQL..."
         podman run -d --pod $POD_NAME --name $DB_NAME \
             -e POSTGRES_PASSWORD=$DB_PASSWORD \
@@ -72,27 +72,29 @@ start_services() {
             -v pg_data:/var/lib/postgresql/data \
             docker.io/library/postgres:16-alpine
     else
-        print_info "PostgreSQL 已在运行"
+        print_info "PostgreSQL 已存在，启动中..."
+        podman start $DB_NAME 2>/dev/null || true
     fi
 
     # 启动后端
-    if ! podman ps --pod -q --filter "name=$BACKEND_NAME" | grep -q .; then
+    if ! podman ps -a --format '{{.Names}}' | grep -q "^${BACKEND_NAME}$"; then
         print_info "启动后端..."
         podman run -d --pod $POD_NAME --name $BACKEND_NAME \
-            -e DATABASE_URL="postgresql://postgres:$DB_PASSWORD@localhost:5432/remote_sensing" \
             -v ./backend/models:/app/models:Z \
             -v ./backend/training/history:/app/training/history:Z \
             $BACKEND_IMAGE
     else
-        print_info "后端已在运行"
+        print_info "后端已存在，启动中..."
+        podman start $BACKEND_NAME 2>/dev/null || true
     fi
 
     # 启动前端
-    if ! podman ps --pod -q --filter "name=$FRONTEND_NAME" | grep -q .; then
+    if ! podman ps -a --format '{{.Names}}' | grep -q "^${FRONTEND_NAME}$"; then
         print_info "启动前端..."
         podman run -d --pod $POD_NAME --name $FRONTEND_NAME $FRONTEND_IMAGE
     else
-        print_info "前端已在运行"
+        print_info "前端已存在，启动中..."
+        podman start $FRONTEND_NAME 2>/dev/null || true
     fi
 
     print_info "服务启动完成！"
