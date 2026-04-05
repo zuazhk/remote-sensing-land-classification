@@ -79,10 +79,7 @@ start_services() {
     # 启动后端
     if ! podman ps -a --format '{{.Names}}' | grep -q "^${BACKEND_NAME}$"; then
         print_info "启动后端..."
-        podman run -d --pod $POD_NAME --name $BACKEND_NAME \
-            -v ./backend/models:/app/models:Z \
-            -v ./backend/training/history:/app/training/history:Z \
-            $BACKEND_IMAGE
+        podman run -d --pod $POD_NAME --name $BACKEND_NAME $BACKEND_IMAGE
     else
         print_info "后端已存在，启动中..."
         podman start $BACKEND_NAME 2>/dev/null || true
