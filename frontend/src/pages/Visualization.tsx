@@ -359,12 +359,8 @@ const Visualization: React.FC = () => {
     const accuracyChartData =
       trainingData.epochs?.map((epoch: number, index: number) => ({
         epoch,
-        train_accuracy: trainingData.train_accuracy?.[index]
-          ? trainingData.train_accuracy[index] * 100
-          : 0,
-        val_accuracy: trainingData.val_accuracy?.[index]
-          ? trainingData.val_accuracy[index] * 100
-          : 0,
+        train_accuracy: trainingData.train_accuracy?.[index] ?? 0,
+        val_accuracy: trainingData.val_accuracy?.[index] ?? 0,
       })) || [];
 
     const lastTrainLoss = trainingData.train_loss?.[trainingData.train_loss.length - 1];
@@ -468,14 +464,14 @@ const Visualization: React.FC = () => {
                   </LineChart>
                 </ResponsiveContainer>
               </div>
-              <div className="mt-4 text-sm text-gray-600">
-                <p>最终训练准确率: {(lastTrainAcc * 100)?.toFixed(1)}%</p>
-                <p>最终验证准确率: {(lastValAcc * 100)?.toFixed(1)}%</p>
-                <p className="mt-1 font-medium">
-                  最佳验证准确率: {(trainingData.best_val_accuracy * 100)?.toFixed(1)}% (第{" "}
-                  {trainingData.best_epoch} 轮)
-                </p>
-              </div>
+               <div className="mt-4 text-sm text-gray-600">
+                 <p>最终训练准确率: {lastTrainAcc?.toFixed(1)}%</p>
+                 <p>最终验证准确率: {lastValAcc?.toFixed(1)}%</p>
+                 <p className="mt-1 font-medium">
+                   最佳验证准确率: {trainingData.best_val_accuracy?.toFixed(1)}% (第{" "}
+                   {trainingData.best_epoch} 轮)
+                 </p>
+               </div>
             </CardContent>
           </Card>
         </div>
@@ -850,18 +846,18 @@ const Visualization: React.FC = () => {
                 <p className="text-sm text-gray-500">参数量</p>
                 <p className="font-semibold">{architectureData.total_params}</p>
               </div>
-              {training_metrics?.best_val_accuracy && (
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-500">最佳验证准确率</p>
-                  <p className="font-semibold">{(training_metrics.best_val_accuracy * 100).toFixed(1)}%</p>
-                </div>
-              )}
-              {training_metrics?.final_test_accuracy && (
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-500">测试准确率</p>
-                  <p className="font-semibold">{(training_metrics.final_test_accuracy * 100).toFixed(1)}%</p>
-                </div>
-              )}
+                {training_metrics?.best_val_accuracy && (
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    <p className="text-sm text-gray-500">最佳验证准确率</p>
+                    <p className="font-semibold">{training_metrics.best_val_accuracy.toFixed(1)}%</p>
+                  </div>
+                )}
+                {training_metrics?.final_test_accuracy && (
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    <p className="text-sm text-gray-500">测试准确率</p>
+                    <p className="font-semibold">{training_metrics.final_test_accuracy.toFixed(1)}%</p>
+                  </div>
+                )}
             </div>
             <p className="mt-4 text-sm text-gray-600">{architectureData.description}</p>
             {architectureData.paper && (
