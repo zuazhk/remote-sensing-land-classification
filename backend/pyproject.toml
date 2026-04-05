@@ -22,6 +22,7 @@ dependencies = [
     "torchaudio==2.5.1+cu121",
     "torchvision==0.20.1+cu121",
     "uvicorn>=0.41.0",
+    "pytest-cov>=6.0.0",
 ]
 
 [tool.uv]
@@ -52,3 +53,9 @@ known-first-party = ["backend"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["backend"]
+
+[tool.pytest.ini_options]
+testpaths = ["backend/tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short --cov=backend --cov-report=term-missing --cov-report=html"

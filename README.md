@@ -38,6 +38,22 @@ vp dev
 ```
 *   **访问地址**: http://localhost:5173
 
+## 🧪 测试
+
+### 后端测试
+```bash
+cd backend
+uv run pytest              # 运行所有测试
+uv run pytest --cov        # 生成覆盖率报告
+```
+
+### 前端测试
+```bash
+cd frontend
+npm test                   # 运行所有测试
+npm run test:watch         # 监听模式（开发时使用）
+```
+
 ## 📦 容器化部署 (推荐)
 
 使用 Podman 一键启动完整服务栈：
@@ -64,9 +80,17 @@ vp dev
 -   **后端**: FastAPI, PyTorch, Timm, PostgreSQL (待集成)
 -   **前端**: React, TypeScript, Recharts, Vite Plus
 -   **部署**: Podman, Nginx
--   **测试**: pytest (后端), 基准测试脚本 (`benchmark_inference.py`)
+-   **测试**: pytest + pytest-cov (后端), Vitest + Testing Library (前端)
+-   **CI/CD**: GitHub Actions (push/PR 自动测试 + 构建检查)
 
 ## 📜 更新日志
+
+### v0.4.0 (2026-04-05)
+-   **新增**: 引入前端 Vitest 测试框架，覆盖 Button/Card 核心组件
+-   **新增**: 后端测试补充预测端点和训练端点测试用例
+-   **新增**: GitHub Actions CI 工作流，push/PR 自动测试 + 构建检查
+-   **新增**: pytest-cov 覆盖率报告支持
+-   **新增**: MIT License 开源许可证
 
 ### v0.3.1 (2026-04-05)
 -   **修复**: 解决 `SwinTinyFeatureExtractor` 预训练权重加载失败问题

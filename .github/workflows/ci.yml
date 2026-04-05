@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Override PyTorch for CPU
+        run: |
+          cd backend
+          sed -i 's|torch==2.5.1+cu121|torch==2.5.1|g' pyproject.toml
+          sed -i 's|torchaudio==2.5.1+cu121|torchaudio==2.5.1|g' pyproject.toml
+          sed -i 's|torchvision==0.20.1+cu121|torchvision==0.20.1|g' pyproject.toml
+          sed -i '/^\[tool\.uv\.sources\]/,/^\[/ { /^\[tool\.uv\.sources\]/d; /^\[/!d }' pyproject.toml
+          sed -i '/^\[tool\.uv\]/,/^\[/ { /^\[tool\.uv\]/d; /^\[/!d }' pyproject.toml
+
+      - name: Install dependencies
+        run: cd backend && uv sync
+
+      - name: Run tests
+        run: cd backend && uv run pytest --cov
+
+  frontend-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: cd frontend && npm ci
+
+      - name: Run tests
+        run: cd frontend && npm test
+
+      - name: Build check
+        run: cd frontend && npm run build
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Override PyTorch for CPU
+        run: |
+          cd backend
+          sed -i 's|torch==2.5.1+cu121|torch==2.5.1|g' pyproject.toml
+          sed -i 's|torchaudio==2.5.1+cu121|torchaudio==2.5.1|g' pyproject.toml
+          sed -i 's|torchvision==0.20.1+cu121|torchvision==0.20.1|g' pyproject.toml
+          sed -i '/^\[tool\.uv\.sources\]/,/^\[/ { /^\[tool\.uv\.sources\]/d; /^\[/!d }' pyproject.toml
+          sed -i '/^\[tool\.uv\]/,/^\[/ { /^\[tool\.uv\]/d; /^\[/!d }' pyproject.toml
+
+      - name: Lint backend
+        run: cd backend && uv run ruff check .
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Lint frontend
+        run: cd frontend && npm run lint
