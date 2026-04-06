@@ -66,8 +66,8 @@ except ImportError:
     }
 
     # API 配置
-    API_HOST = "127.0.0.1"
-    API_PORT = 8001  # 使用不同端口避免与原始项目冲突
+    API_HOST = "0.0.0.0"
+    API_PORT = 8001
 
     # CORS配置（前端开发服务器）
     FRONTEND_DEV_URL = "http://localhost:5173"
