@@ -3,7 +3,7 @@
 支持单图预测、多模型对比、批量预测
 """
 
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from pathlib import Path
@@ -18,6 +18,10 @@ from ..shared import classifiers, validate_model_key
 from ..config import ALLOWED_MIME_TYPES, MAX_FILE_SIZE, ALLOWED_EXTENSIONS
 from ..cache import cached_prediction, prediction_cache
 from ..cache_integration import create_image_signature
+from ..database import get_db
+from ..db_models.prediction_record import PredictionRecord
+from ..db_models.user import User
+from ..auth import get_optional_user
 
 router = APIRouter()
 
@@ -103,28 +107,45 @@ def validate_upload_file(file: UploadFile):
     return filename, suffix
 
 
-@router.post("/predict", response_model=PredictResponse)
-async def predict_image(model: str, file: UploadFile = File(...)):
-    """使用指定模型对单张图像进行预测"""
-    # 验证模型
-    validate_model_key(model)
+async def save_prediction_record(
+    db, user: User | None, model: str, result: dict, filename: str | None = None
+):
+    if user is None or result.get("error"):
+        return
+    record = PredictionRecord(
+        user_id=user.id,
+        model_key=model,
+        predicted_class=result.get("class", ""),
+        confidence=result.get("confidence", 0),
+        all_probabilities=result.get("all_probabilities"),
+        image_filename=filename,
+    )
+    db.add(record)
+    await db.flush()
 
-    # 验证文件
+
+@router.post("/predict", response_model=PredictResponse)
+async def predict_image(
+    model: str,
+    file: UploadFile = File(...),
+    db=Depends(get_db),
+    current_user: User | None = Depends(get_optional_user),
+):
+    """使用指定模型对单张图像进行预测。登录用户自动保存历史记录。"""
+    validate_model_key(model)
     filename, suffix = validate_upload_file(file)
 
-    # 保存到临时文件
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
         shutil.copyfileobj(file.file, tmp)
         tmp_path = tmp.name
 
     try:
-        # 进行预测（使用缓存）
         result = cached_predict(model, Path(tmp_path))
+        await save_prediction_record(db, current_user, model, result, filename)
         return PredictResponse(model=model, result=result)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"预测失败: {str(e)}")
     finally:
-        # 清理临时文件
         if tmp_path:
             Path(tmp_path).unlink(missing_ok=True)
 
