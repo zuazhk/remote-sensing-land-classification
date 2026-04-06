@@ -6,7 +6,7 @@
 
 - **多模型支持**: EfficientNet-B0 (CNN), Swin Transformer (ViT), 以及轻量级特征提取器
 - **可视化分析**: 混淆矩阵、ROC 曲线、训练历史、特征图可视化、模型架构展示
-- **容器化部署**: 基于 Podman Pod 的一键部署方案 (前端+后端+PostgreSQL)
+- **容器化部署**: 基于 Podman 的一键部署方案，镜像托管于 GitHub Container Registry
 - **工程化规范**: 类型安全 (TypeScript/Pydantic)、早停机制、梯度裁剪、学习率预热
 - **真实基准测试**: 提供 `benchmark_inference` 脚本，获取真实推理耗时数据
 - **测试覆盖**: 后端 pytest + 前端 Vitest，GitHub Actions 自动 CI
@@ -21,8 +21,21 @@
 
 ## 🚀 快速开始
 
-### 1. 启动后端
+### 方式一：容器化部署（推荐）
 
+```bash
+git clone https://github.com/zuazhk/remote-sensing-land-classification.git
+cd remote-sensing-land-classification
+podman-compose up -d
+```
+
+**服务地址**:
+- 前端: http://localhost:8080
+- 后端 API: http://localhost:8000
+
+### 方式二：本地开发
+
+**启动后端**:
 ```bash
 cd backend
 uv run python -m backend
@@ -30,8 +43,7 @@ uv run python -m backend
 *   **API 文档**: http://localhost:8000/docs
 *   **硬件要求**: NVIDIA GPU (推荐 RTX 3050 及以上，4GB+ 显存)
 
-### 2. 启动前端
-
+**启动前端**:
 ```bash
 cd frontend
 npm install  # 首次运行
@@ -55,62 +67,31 @@ npm test                   # 运行所有测试
 npm run test:watch         # 监听模式（开发时使用）
 ```
 
-## 📦 容器化部署 (推荐)
-
-使用 Podman 一键启动完整服务栈：
-
-```bash
-./deploy.sh build   # 构建镜像
-./deploy.sh start   # 启动服务
-```
-
-**服务地址**:
--   前端: http://localhost:8080
--   后端 API: http://localhost:8000
--   数据库: localhost:5432
-
 ## 📚 文档索引
 
 | 文档 | 描述 |
 | :--- | :--- |
 | **[模型训练指南](TRAINING_GUIDE.md)** | 如何训练模型、参数调优、硬件适配 |
-| **[里程碑报告](REPORT-v0.3.0.md)** | 项目技术演进、架构设计、测试数据 |
+| **[v1.0.0 里程碑报告](REPORT-v1.0.0.md)** | 项目架构演进、技术栈、测试数据、部署方案 |
 
 ## 🛠️ 技术栈
 
 -   **后端**: FastAPI, PyTorch, Timm
 -   **前端**: React, TypeScript, Recharts, Vite Plus
--   **部署**: Podman, Nginx
+-   **部署**: Podman, Nginx, GitHub Container Registry
 -   **测试**: pytest + pytest-cov (后端), Vitest + Testing Library (前端)
 -   **CI/CD**: GitHub Actions (push/PR 自动测试 + 构建检查)
 
 ## 📜 更新日志
 
-### v0.4.0 (2026-04-05)
--   **新增**: 引入前端 Vitest 测试框架，覆盖 Button/Card 核心组件
--   **新增**: 后端测试补充预测端点和训练端点测试用例
--   **新增**: GitHub Actions CI 工作流，push/PR 自动测试 + 构建检查
--   **新增**: pytest-cov 覆盖率报告支持
--   **新增**: MIT License 开源许可证
-
-### v0.3.1 (2026-04-05)
--   **修复**: 解决 `SwinTinyFeatureExtractor` 预训练权重加载失败问题
--   **修复**: 修正首次训练时错误触发防覆盖逻辑导致测试准确率为 0 的 Bug
--   **优化**: 抑制 `timm` 和 `httpx` 的冗余 INFO 日志，保持控制台整洁
--   **优化**: 更新模型对比数据为真实基准测试结果
--   **优化**: 增强 EfficientNet Block 块的差异化功能描述
--   **新增**: 添加 `benchmark_inference.py` 脚本，支持真实推理耗时测试
-
-### v0.3.0 (2026-04-04)
--   **架构**: 调整为 `backend/backend/` 标准双层包结构
--   **容器化**: 新增 Podman Pod 部署支持
--   **训练优化**: 增加学习率预热 (Warmup)、梯度裁剪、数据增强
--   **可视化**: 新增模型架构展示、特征图预生成
--   **修复**: 修正早停逻辑与训练历史覆盖问题
-
-### v0.2.0 (2026-04-02)
--   **前端**: API 配置中心化，批量处理优化，ROC 曲线修复
--   **后端**: 相对导入重构，训练 CLI 工具
+### v1.0.0 (2026-04-06) - 正式发布
+-   **发布**: v1.0.0 稳定版本，核心功能完整
+-   **部署**: 前后端镜像推送至 ghcr.io，提供 podman-compose.yml 一键启动
+-   **测试**: 引入后端 pytest 和前端 Vitest 测试框架
+-   **CI**: GitHub Actions 自动化测试和构建检查
+-   **修复**: 准确率显示错误、容器网络不可达、模块导入缺失等多项 Bug
+-   **文档**: 整合历史报告为 v1.0.0 里程碑报告
+-   **协议**: MIT License 开源许可证
 
 ---
 
