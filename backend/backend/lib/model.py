@@ -13,7 +13,7 @@ from .config import PRETRAINED_WEIGHTS_DIR
 os.environ["TORCH_HOME"] = str(PRETRAINED_WEIGHTS_DIR)
 
 
-def create_model(model_name: str, num_classes: int, pretrained: bool = True):
+def create_model(model_name: str, num_classes: int, pretrained: bool = False):
     model = timm.create_model(
         model_name, pretrained=pretrained, num_classes=num_classes
     )
@@ -23,7 +23,7 @@ def create_model(model_name: str, num_classes: int, pretrained: bool = True):
 class CNNModel(nn.Module):
     def __init__(self, model_name: str = "efficientnet_b0", num_classes: int = 10):
         super().__init__()
-        self.model = create_model(model_name, num_classes, pretrained=True)
+        self.model = create_model(model_name, num_classes, pretrained=False)
         self.model_type = "cnn"
 
     def forward(self, x):
@@ -35,7 +35,7 @@ class TransformerModel(nn.Module):
         self, model_name: str = "swin_tiny_patch4_window7_224", num_classes: int = 10
     ):
         super().__init__()
-        self.model = create_model(model_name, num_classes, pretrained=True)
+        self.model = create_model(model_name, num_classes, pretrained=False)
         self.model_type = "transformer"
 
     def forward(self, x):
@@ -47,9 +47,8 @@ class SwinTinyFeatureExtractor(nn.Module):
         self, model_name: str = "swin_tiny_patch4_window7_224", num_classes: int = 10
     ):
         super().__init__()
-        # 通过 timm 自动下载并加载预训练权重
         self.base_model = timm.create_model(
-            model_name, pretrained=True, num_classes=1000
+            model_name, pretrained=False, num_classes=1000
         )
 
         # 冻结所有参数
