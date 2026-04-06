@@ -46,6 +46,11 @@ class Settings(BaseSettings):
     # 格式: postgresql+asyncpg://user:password@host:port/dbname
     database_url: str = "postgresql+asyncpg://postgres:123456@localhost:5432/remote_sensing"
 
+    # JWT 鉴权配置
+    jwt_secret_key: str = "dev-secret-key-change-in-production"
+    jwt_algorithm: str = "HS256"
+    jwt_expire_minutes: int = 60 * 24 * 7  # 7 天
+
     # 路径配置
     model_path_prefix: Path = Path("/home/zhouh/biye/models")
     data_path_prefix: Path = Path("/home/zhouh/biye/data")
