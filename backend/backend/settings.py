@@ -42,6 +42,10 @@ class Settings(BaseSettings):
     api_workers: int = 4
     api_reload: bool = False
 
+    # 数据库配置 (PostgreSQL)
+    # 格式: postgresql+asyncpg://user:password@host:port/dbname
+    database_url: str = "postgresql+asyncpg://postgres:123456@localhost:5432/remote_sensing"
+
     # 路径配置
     model_path_prefix: Path = Path("/home/zhouh/biye/models")
     data_path_prefix: Path = Path("/home/zhouh/biye/data")
