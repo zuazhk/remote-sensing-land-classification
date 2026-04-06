@@ -11,6 +11,11 @@ export const API_ENDPOINTS = {
   predict: `${API_BASE_URL}/predict`,
   predictBatch: `${API_BASE_URL}/predict/batch`,
   predictCompare: `${API_BASE_URL}/predict/compare`,
+  auth: {
+    register: `${API_BASE_URL}/auth/register`,
+    login: `${API_BASE_URL}/auth/login`,
+  },
+  history: `${API_BASE_URL}/history`,
   visualization: {
     modelComparison: `${API_BASE_URL}/visualization/model-comparison`,
     confusionMatrix: (modelKey: string) => `${API_BASE_URL}/visualization/confusion-matrix/${modelKey}`,
