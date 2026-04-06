@@ -1,14 +1,15 @@
 # 遥感图像土地利用分类系统
 
-基于深度学习的遥感图像分类 Web 系统，采用现代化前后端分离架构，专为求职作品集和毕业设计展示设计。
+基于深度学习的遥感图像分类 Web 系统。本项目为毕业设计的前后端分离重构版本，采用现代化技术栈重新实现。
 
 ## ✨ 核心特性
 
 - **多模型支持**: EfficientNet-B0 (CNN), Swin Transformer (ViT), 以及轻量级特征提取器
 - **可视化分析**: 混淆矩阵、ROC 曲线、训练历史、特征图可视化、模型架构展示
-- **容器化部署**: 基于 Podman Pod 的一键部署方案 (前端+后端+数据库)
+- **容器化部署**: 基于 Podman Pod 的一键部署方案 (前端+后端+PostgreSQL)
 - **工程化规范**: 类型安全 (TypeScript/Pydantic)、早停机制、梯度裁剪、学习率预热
 - **真实基准测试**: 提供 `benchmark_inference` 脚本，获取真实推理耗时数据
+- **测试覆盖**: 后端 pytest + 前端 Vitest，GitHub Actions 自动 CI
 
 ## 📊 模型性能指标 (RTX 3050 Laptop)
 
@@ -77,7 +78,7 @@ npm run test:watch         # 监听模式（开发时使用）
 
 ## 🛠️ 技术栈
 
--   **后端**: FastAPI, PyTorch, Timm, PostgreSQL (待集成)
+-   **后端**: FastAPI, PyTorch, Timm
 -   **前端**: React, TypeScript, Recharts, Vite Plus
 -   **部署**: Podman, Nginx
 -   **测试**: pytest + pytest-cov (后端), Vitest + Testing Library (前端)
@@ -113,4 +114,4 @@ npm run test:watch         # 监听模式（开发时使用）
 
 ---
 
-**注意**: 本项目为毕业设计重构版本。生产环境部署前请进行充分测试。
+**注意**: 本项目为毕业设计的前后端分离重构版本。生产环境部署前请进行充分测试。

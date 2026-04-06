@@ -99,10 +99,10 @@ const Home: React.FC = () => {
 
       <div className="mt-12 text-center">
         <p className="text-gray-500">
-          项目基于原始毕业设计重构，保留所有核心功能，采用现代技术栈重新实现。
+          基于毕业设计重构，保留核心功能，采用现代技术栈前后端分离实现。
         </p>
         <p className="text-sm text-gray-400 mt-2">
-          后端API: FastAPI + PyTorch | 前端: React + TypeScript + Vite
+          后端: FastAPI + PyTorch (3模型) | 前端: React + TypeScript + Vite Plus | 部署: Podman
         </p>
       </div>
     </div>
