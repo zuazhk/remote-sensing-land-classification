@@ -8,6 +8,7 @@ from alembic import context
 
 from backend.database import Base
 from backend.db_models.user import User  # noqa: F401
+from backend.db_models.prediction_record import PredictionRecord  # noqa: F401
 
 config = context.config
 

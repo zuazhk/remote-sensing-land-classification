@@ -10,7 +10,9 @@ from .auth_schemas import RegisterRequest, LoginRequest, TokenResponse, UserResp
 router = APIRouter(prefix="/auth", tags=["鉴权"])
 
 
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED
+)
 async def register(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).where(User.username == req.username))
     if result.scalar_one_or_none():
@@ -26,6 +28,7 @@ async def register(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
         hashed_password=hash_password(req.password),
     )
     db.add(user)
+    await db.flush()
     return user
 
 

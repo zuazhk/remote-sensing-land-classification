@@ -103,7 +103,16 @@ app.add_middleware(RequestLoggingMiddleware)
 
 # 导入路由
 # 注意：由于循环导入问题，我们在lifespan之后导入
-from .routes import health, models, predict, evaluation, visualization, train, auth
+from .routes import (
+    health,
+    models,
+    predict,
+    evaluation,
+    visualization,
+    train,
+    auth,
+    history,
+)
 
 # 注册路由
 app.include_router(health.router, prefix="/api/v1", tags=["系统状态"])
@@ -113,6 +122,7 @@ app.include_router(evaluation.router, prefix="/api/v1", tags=["评估分析"])
 app.include_router(visualization.router, prefix="/api/v1", tags=["可视化"])
 app.include_router(train.router, prefix="/api/v1", tags=["训练功能"])
 app.include_router(auth.router, prefix="/api/v1")
+app.include_router(history.router, prefix="/api/v1")
 
 
 # 根路径重定向到文档

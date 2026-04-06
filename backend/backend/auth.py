@@ -1,19 +1,29 @@
 from datetime import datetime, timedelta, timezone
 
-from passlib.context import CryptContext
+import bcrypt
 import jwt
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 from .settings import settings
+from .database import get_db
+from .db_models.user import User
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+security = HTTPBearer()
 
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password.encode("utf-8"), salt)
+    return hashed.decode("utf-8")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+    return bcrypt.checkpw(
+        plain_password.encode("utf-8"), hashed_password.encode("utf-8")
+    )
 
 
 def create_access_token(user_id: int, username: str) -> str:
@@ -31,5 +41,24 @@ def decode_access_token(token: str) -> dict | None:
         return jwt.decode(token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])
     except jwt.ExpiredSignatureError:
         return None
+    except jwt.InvalidTokenError:
+        return None
+
+
+async def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: AsyncSession = Depends(get_db),
+) -> User:
+    token = credentials.credentials
+    payload = decode_access_token(token)
+    if payload is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token 无效或已过期")
+
+    user_id = int(payload["sub"])
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="用户不存在")
+    return user
     except jwt.InvalidTokenError:
         return None
