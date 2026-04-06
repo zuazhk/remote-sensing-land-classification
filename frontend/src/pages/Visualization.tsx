@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import axios from "axios";
+import api from "../api/client";
 import {
   LineChart,
   Line,
@@ -31,7 +31,7 @@ const Visualization: React.FC = () => {
   const { data: models } = useQuery({
     queryKey: ["models"],
     queryFn: async () => {
-      const response = await axios.get(API_ENDPOINTS.models);
+      const response = await api.get(API_ENDPOINTS.models);
       // API返回的是字典，需要转换为数组
       return Object.entries(response.data).map(([key, value]: [string, any]) => ({
         key,
@@ -45,7 +45,7 @@ const Visualization: React.FC = () => {
   const { data: confusionData } = useQuery({
     queryKey: ["confusion-matrix", selectedModel],
     queryFn: async () => {
-      const response = await axios.get(
+      const response = await api.get(
         API_ENDPOINTS.visualization.confusionMatrix(selectedModel),
       );
       return response.data;
@@ -57,7 +57,7 @@ const Visualization: React.FC = () => {
   const { data: rocData } = useQuery({
     queryKey: ["roc-curves", selectedModel],
     queryFn: async () => {
-      const response = await axios.get(API_ENDPOINTS.visualization.rocCurves(selectedModel));
+      const response = await api.get(API_ENDPOINTS.visualization.rocCurves(selectedModel));
       return response.data;
     },
     enabled: activeTab === "roc",
@@ -67,7 +67,7 @@ const Visualization: React.FC = () => {
   const { data: trainingData } = useQuery({
     queryKey: ["training-history", selectedModel],
     queryFn: async () => {
-      const response = await axios.get(
+      const response = await api.get(
         API_ENDPOINTS.visualization.trainingHistory(selectedModel),
       );
       return response.data;
@@ -79,7 +79,7 @@ const Visualization: React.FC = () => {
   const { data: featureData } = useQuery({
     queryKey: ["feature-visualization", selectedModel],
     queryFn: async () => {
-      const response = await axios.get(
+      const response = await api.get(
         API_ENDPOINTS.visualization.featureVisualization(selectedModel),
       );
       return response.data;
@@ -91,7 +91,7 @@ const Visualization: React.FC = () => {
   const { data: architectureData } = useQuery({
     queryKey: ["architecture", selectedModel],
     queryFn: async () => {
-      const response = await axios.get(API_ENDPOINTS.visualization.architecture(selectedModel));
+      const response = await api.get(API_ENDPOINTS.visualization.architecture(selectedModel));
       return response.data;
     },
     enabled: activeTab === "architecture",

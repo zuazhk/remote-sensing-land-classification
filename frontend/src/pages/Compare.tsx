@@ -1,6 +1,6 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
-import axios from "axios";
+import api from "../api/client";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card";
 import { API_ENDPOINTS } from "../config/api";
 import {
@@ -23,7 +23,7 @@ const Compare: React.FC = () => {
   } = useQuery({
     queryKey: ["model-comparison"],
     queryFn: async () => {
-      const response = await axios.get(API_ENDPOINTS.visualization.modelComparison);
+      const response = await api.get(API_ENDPOINTS.visualization.modelComparison);
       return response.data;
     },
     retry: 2,
