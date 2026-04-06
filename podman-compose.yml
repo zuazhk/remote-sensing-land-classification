@@ -1,0 +1,17 @@
+version: "3"
+services:
+  backend:
+    image: ghcr.io/zuazhk/remote-sensing-land-classification/backend:v1.0.0
+    container_name: rs-backend
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  frontend:
+    image: ghcr.io/zuazhk/remote-sensing-land-classification/frontend:v1.0.0
+    container_name: rs-frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
