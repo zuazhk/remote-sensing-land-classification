@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import axios from "axios";
+import api from "../api/client";
 import { API_ENDPOINTS } from "../config/api";
 
 const Predict: React.FC = () => {
@@ -17,7 +17,7 @@ const Predict: React.FC = () => {
   const { data: models } = useQuery({
     queryKey: ["models"],
     queryFn: async () => {
-      const response = await axios.get(API_ENDPOINTS.models);
+      const response = await api.get(API_ENDPOINTS.models);
       // 将字典转换为数组
       return Object.entries(response.data).map(([key, value]) => ({
         key,
@@ -30,7 +30,7 @@ const Predict: React.FC = () => {
   // 预测突变
   const predictMutation = useMutation({
     mutationFn: async (formData: FormData) => {
-      const response = await axios.post(`${API_ENDPOINTS.predict}?model=${selectedModel}`, formData, {
+      const response = await api.post(`${API_ENDPOINTS.predict}?model=${selectedModel}`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       return response.data;
@@ -76,7 +76,7 @@ const Predict: React.FC = () => {
     });
 
     try {
-      const response = await axios.post(
+      const response = await api.post(
         `${API_ENDPOINTS.predictBatch}?model=${selectedModel}`,
         formData,
         {

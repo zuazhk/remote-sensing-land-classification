@@ -35,12 +35,16 @@ def create_access_token(user_id: int, username: str) -> str:
         "username": username,
         "exp": expire,
     }
-    return jwt.encode(payload, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
+    return jwt.encode(
+        payload, settings.jwt_secret_key, algorithm=settings.jwt_algorithm
+    )
 
 
 def decode_access_token(token: str) -> dict | None:
     try:
-        return jwt.decode(token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])
+        return jwt.decode(
+            token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm]
+        )
     except jwt.ExpiredSignatureError:
         return None
     except jwt.InvalidTokenError:
@@ -54,19 +58,25 @@ async def get_current_user(
     token = credentials.credentials
     payload = decode_access_token(token)
     if payload is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token 无效或已过期")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Token 无效或已过期"
+        )
 
     user_id = int(payload["sub"])
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="用户不存在")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="用户不存在"
+        )
     return user
 
 
 async def get_optional_user(
     db: AsyncSession = Depends(get_db),
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False)),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(
+        HTTPBearer(auto_error=False)
+    ),
 ) -> User | None:
     if credentials is None:
         return None
@@ -76,5 +86,3 @@ async def get_optional_user(
     user_id = int(payload["sub"])
     result = await db.execute(select(User).where(User.id == user_id))
     return result.scalar_one_or_none()
-    except jwt.InvalidTokenError:
-        return None
