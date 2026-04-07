@@ -4,10 +4,8 @@
 set -e
 
 POD_NAME="remote-sensing-pod"
-DB_NAME="rs-db"
 BACKEND_NAME="rs-backend"
 FRONTEND_NAME="rs-frontend"
-DB_PASSWORD="postgres123"
 BACKEND_IMAGE="rs-backend"
 FRONTEND_IMAGE="rs-frontend"
 
@@ -59,22 +57,10 @@ start_services() {
 
     # 创建 Pod
     if ! podman pod exists $POD_NAME 2>/dev/null; then
-        print_info "创建 Pod (端口: 80->前端, 8000->后端, 5432->数据库)..."
-        podman pod create --name $POD_NAME -p 8080:80 -p 8000:8000 -p 5432:5432
+        print_info "创建 Pod (端口: 80->前端, 8000->后端)..."
+        podman pod create --name $POD_NAME -p 8080:80 -p 8000:8000
     fi
 
-    # 启动 PostgreSQL
-    if ! podman ps -a --format '{{.Names}}' | grep -q "^${DB_NAME}$"; then
-        print_info "启动 PostgreSQL..."
-        podman run -d --pod $POD_NAME --name $DB_NAME \
-            -e POSTGRES_PASSWORD=$DB_PASSWORD \
-            -e POSTGRES_DB=remote_sensing \
-            -v pg_data:/var/lib/postgresql/data \
-            docker.io/library/postgres:16-alpine
-    else
-        print_info "PostgreSQL 已存在，启动中..."
-        podman start $DB_NAME 2>/dev/null || true
-    fi
 
     # 启动后端
     if ! podman ps -a --format '{{.Names}}' | grep -q "^${BACKEND_NAME}$"; then
@@ -149,7 +135,7 @@ check_status() {
 clean_all() {
     print_info "清理 Pod 和容器..."
     podman pod rm -f $POD_NAME 2>/dev/null || true
-    podman rm -f $DB_NAME $BACKEND_NAME $FRONTEND_NAME 2>/dev/null || true
+    podman rm -f $BACKEND_NAME $FRONTEND_NAME 2>/dev/null || true
     podman rmi $BACKEND_IMAGE $FRONTEND_IMAGE 2>/dev/null || true
     podman volume rm pg_data 2>/dev/null || true
     print_info "清理完成"
