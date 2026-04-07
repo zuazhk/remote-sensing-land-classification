@@ -123,16 +123,16 @@ const App: React.FC = () => {
                   <div>
                     <h3 className="text-lg font-bold mb-4">遥感图像分类系统</h3>
                     <p className="text-gray-400">
-                      基于深度学习的现代前后端分离版本，专为求职作品集设计。
+                      基于深度学习的遥感图像土地利用分类系统 (v1.1.0) - 毕业设计重构版本。
                     </p>
                   </div>
                   <div>
                     <h3 className="text-lg font-bold mb-4">技术栈</h3>
                     <ul className="text-gray-400 space-y-2">
-                      <li>前端: React + TypeScript + Vite</li>
+                      <li>前端: React + TypeScript + Vite Plus</li>
                       <li>后端: FastAPI + PyTorch</li>
-                      <li>模型: EfficientNet, Swin Transformer</li>
-                      <li>部署: Docker + Nginx</li>
+                      <li>模型: EfficientNet-B0, Swin Transformer</li>
+                      <li>部署: Podman + Nginx</li>
                     </ul>
                   </div>
                   <div>
@@ -145,7 +145,7 @@ const App: React.FC = () => {
                           rel="noopener noreferrer"
                           className="hover:text-white"
                         >
-                          API文档
+                          API 文档 (Swagger)
                         </a>
                       </li>
                       <li>
@@ -155,27 +155,24 @@ const App: React.FC = () => {
                           rel="noopener noreferrer"
                           className="hover:text-white"
                         >
-                          ReDoc文档
+                          ReDoc 文档
                         </a>
                       </li>
                       <li>
                         <a
-                          href="https://github.com"
+                          href="https://github.com/zuazhk/remote-sensing-land-classification"
                           target="_blank"
                           rel="noopener noreferrer"
                           className="hover:text-white"
                         >
-                          GitHub仓库
+                          GitHub 仓库
                         </a>
                       </li>
                     </ul>
                   </div>
                 </div>
                 <div className="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
-                  <p>© 2025 遥感图像分类系统 - 前后端分离版本. 毕业设计重构项目.</p>
-                  <p className="text-sm mt-2">
-                    本项目基于原始毕业设计重构，保留所有核心功能，采用现代技术栈重新实现。
-                  </p>
+                  <p>© 2026 遥感图像分类系统 - 毕业设计重构项目.</p>
                 </div>
               </div>
             </footer>

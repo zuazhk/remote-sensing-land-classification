@@ -4,6 +4,12 @@ export const API_BASE_URL = isDev
   ? (import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api/v1")
   : "/api/v1";
 
+// 动态生成文档链接：直接指向后端 8000 端口，绕过前端 Nginx 代理限制
+const getDocsUrl = (path: string) => {
+  if (isDev) return `http://localhost:8000${path}`;
+  return `${window.location.protocol}//${window.location.hostname}:8000${path}`;
+};
+
 export const API_ENDPOINTS = {
   health: `${API_BASE_URL}/health`,
   models: `${API_BASE_URL}/models`,
@@ -27,6 +33,6 @@ export const API_ENDPOINTS = {
   evaluation: {
     metrics: (modelKey: string) => `${API_BASE_URL}/evaluation/${modelKey}`,
   },
-  docs: `${API_BASE_URL.replace("/api/v1", "")}/docs`,
-  redoc: `${API_BASE_URL.replace("/api/v1", "")}/redoc`,
+  docs: getDocsUrl("/docs"),
+  redoc: getDocsUrl("/redoc"),
 };
